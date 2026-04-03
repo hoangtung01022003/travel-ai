@@ -8,6 +8,7 @@ import {
   Heart,
   Map,
   Star,
+  Sparkles,
   ChevronLeft,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -19,6 +20,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Heart,
   Map,
   Star,
+  Sparkles,
 }
 
 export const FeatureSideBar = () => {

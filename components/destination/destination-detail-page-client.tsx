@@ -301,7 +301,7 @@ export const DestinationDetailPageClient = ({
               </div>
               <Separator className="my-4" />
               <Button className="w-full" size="lg" asChild>
-                <Link href="/ai-planner">✨ Tạo lịch trình AI</Link>
+                <Link href={`/ai-planner?destination=${encodeURIComponent(destination.name as string)}`}>✨ Tạo lịch trình AI</Link>
               </Button>
               <Button variant="outline" className="mt-2 w-full" size="lg">
                 <Heart
