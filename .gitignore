@@ -32,8 +32,18 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
-
+.env.local
+instructions.md
+test.py
+project_dump.txt
+🏗️ System Analysis.txt
+🏗️ System Analysis.docx
+analysis_viettravel.md
+~$️ System Analysis.txt
+~$️ System Analysis.docx
 # vercel
+system.md
+
 .vercel
 
 # typescript
