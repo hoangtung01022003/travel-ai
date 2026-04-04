@@ -19,6 +19,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { formatPrice, timeAgo } from '@/lib/utils/common'
 import { HotelDetail } from '@/types/hotel'
+import BookingModal from '@/components/booking/booking-modal'
 
 interface HotelDetailPageClientProps {
   hotel: HotelDetail
@@ -28,6 +29,8 @@ export const HotelDetailPageClient = ({
   hotel,
 }: HotelDetailPageClientProps) => {
   const [imgIndex, setImgIndex] = useState(0)
+  const [bookingOpen, setBookingOpen] = useState(false)
+  const [selectedPrice, setSelectedPrice] = useState(0)
 
   const images = hotel.hotel_images || []
   const allImages = hotel.cover_image
@@ -133,9 +136,8 @@ export const HotelDetailPageClient = ({
                 <button
                   key={idx}
                   onClick={() => setImgIndex(idx)}
-                  className={`h-2.5 w-2.5 rounded-full transition ${
-                    idx === imgIndex ? 'bg-white' : 'bg-white/50'
-                  }`}
+                  className={`h-2.5 w-2.5 rounded-full transition ${idx === imgIndex ? 'bg-white' : 'bg-white/50'
+                    }`}
                 />
               ))}
             </div>
@@ -232,7 +234,7 @@ export const HotelDetailPageClient = ({
                             /đêm
                           </span>
                         </div>
-                        <Button>Đặt phòng</Button>
+                        <Button onClick={() => { setSelectedPrice(Number(room.price_per_night)); setBookingOpen(true) }}>Đặt phòng</Button>
                       </div>
                     </div>
                   </motion.div>
@@ -304,7 +306,14 @@ export const HotelDetailPageClient = ({
                 {formatPrice(Number(hotel.min_price))}
               </p>
               <p className="text-muted-foreground mb-4 text-sm">/đêm</p>
-              <Button className="mb-3 w-full" size="lg">
+              <Button
+                className="mb-3 w-full"
+                size="lg"
+                onClick={() => {
+                  setSelectedPrice(Number(hotel.min_price))
+                  setBookingOpen(true)
+                }}
+              >
                 Đặt ngay
               </Button>
               <Button variant="outline" className="w-full" size="lg">
@@ -324,6 +333,16 @@ export const HotelDetailPageClient = ({
           </div>
         </div>
       </div>
+
+      <BookingModal
+        open={bookingOpen}
+        onClose={() => setBookingOpen(false)}
+        type="hotel"
+        itemId={hotel.id as string}
+        itemName={hotel.name as string}
+        pricePerUnit={selectedPrice || Number(hotel.min_price)}
+        priceLabel="/đêm"
+      />
     </div>
   )
 }

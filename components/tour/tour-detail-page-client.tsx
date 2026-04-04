@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Star, Heart, Share2, Clock, Users, CalendarDays } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -9,12 +10,15 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { formatPrice, timeAgo } from '@/lib/utils/common'
 import { TourDetail } from '@/types/tour'
+import BookingModal from '@/components/booking/booking-modal'
 
 interface TourDetailPageClientProps {
   tour: TourDetail
 }
 
 export const TourDetailPageClient = ({ tour }: TourDetailPageClientProps) => {
+  const [bookingOpen, setBookingOpen] = useState(false)
+
   const coverImages = tour.cover_image
     ? [{ image_url: tour.cover_image as string }]
     : []
@@ -22,8 +26,7 @@ export const TourDetailPageClient = ({ tour }: TourDetailPageClientProps) => {
     (a, b) => (a.day_number as number) - (b.day_number as number)
   )
   const reviews = tour.reviews || []
-
-  console.log(tour)
+  const startDates: string[] = Array.isArray(tour.start_dates) ? (tour.start_dates as string[]) : []
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -218,7 +221,7 @@ export const TourDetailPageClient = ({ tour }: TourDetailPageClientProps) => {
                 </div>
               </div>
 
-              <Button className="mb-3 w-full" size="lg">
+              <Button className="mb-3 w-full" size="lg" onClick={() => setBookingOpen(true)}>
                 Đặt tour ngay
               </Button>
               <Button variant="outline" className="w-full" size="lg">
@@ -236,6 +239,17 @@ export const TourDetailPageClient = ({ tour }: TourDetailPageClientProps) => {
           </div>
         </div>
       </div>
+
+      <BookingModal
+        open={bookingOpen}
+        onClose={() => setBookingOpen(false)}
+        type="tour"
+        itemId={tour.id as string}
+        itemName={tour.name as string}
+        pricePerUnit={Number(tour.price)}
+        priceLabel="/người"
+        startDates={startDates}
+      />
     </div>
   )
 }

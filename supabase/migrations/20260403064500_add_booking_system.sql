@@ -10,18 +10,26 @@
 -- 0. ENUM TYPES
 -- ============================================================
 
-CREATE TYPE booking_status AS ENUM (
-  'pending',    -- Chờ xử lý (vừa tạo, chưa thanh toán)
-  'confirmed',  -- Đã xác nhận (thanh toán thành công)
-  'cancelled',  -- Đã hủy (user hoặc admin hủy)
-  'refunded'    -- Đã hoàn tiền
-);
+DO $$ BEGIN
+  CREATE TYPE booking_status AS ENUM (
+    'pending',
+    'confirmed',
+    'cancelled',
+    'refunded'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
-CREATE TYPE payment_status AS ENUM (
-  'unpaid',     -- Chưa thanh toán
-  'paid',       -- Đã thanh toán
-  'refunded'    -- Đã hoàn tiền
-);
+DO $$ BEGIN
+  CREATE TYPE payment_status AS ENUM (
+    'unpaid',
+    'paid',
+    'refunded'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 
 -- ============================================================
@@ -123,11 +131,12 @@ CREATE INDEX IF NOT EXISTS idx_bookings_tour_date_status
 -- ============================================================
 
 -- Hàm update_updated_at() đã có từ migration trước, tái sử dụng
+DROP TRIGGER IF EXISTS update_bookings_timestamp ON bookings;
+
 CREATE TRIGGER update_bookings_timestamp
   BEFORE UPDATE ON bookings
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at();
-
 
 -- ============================================================
 -- 6. TRIGGER: cộng booking_count vào tours khi confirmed
@@ -158,6 +167,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 COMMENT ON FUNCTION sync_tour_booking_count() IS
   'Tự động cập nhật tours.booking_count khi booking status thay đổi: +num_people khi confirmed, -num_people khi cancelled/refunded từ confirmed';
+DROP TRIGGER IF EXISTS trg_sync_tour_booking_count ON bookings;
 
 CREATE TRIGGER trg_sync_tour_booking_count
   AFTER UPDATE OF status ON bookings
@@ -165,6 +175,7 @@ CREATE TRIGGER trg_sync_tour_booking_count
   EXECUTE FUNCTION sync_tour_booking_count();
 
 -- Trigger cho INSERT mới với status = 'confirmed' ngay từ đầu (ít dùng nhưng an toàn)
+DROP TRIGGER IF EXISTS trg_sync_tour_booking_count_insert ON bookings;
 CREATE TRIGGER trg_sync_tour_booking_count_insert
   AFTER INSERT ON bookings
   FOR EACH ROW
@@ -179,12 +190,14 @@ CREATE TRIGGER trg_sync_tour_booking_count_insert
 ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
 
 -- User chỉ xem booking của chính mình
+DROP POLICY IF EXISTS "Users can view own bookings" ON bookings;
 CREATE POLICY "Users can view own bookings"
   ON bookings
   FOR SELECT
   USING (auth.uid() = user_id);
 
 -- User chỉ tạo booking cho chính mình (không giả mạo user_id)
+DROP POLICY IF EXISTS "Users can create own bookings" ON bookings;
 CREATE POLICY "Users can create own bookings"
   ON bookings
   FOR INSERT
@@ -192,6 +205,7 @@ CREATE POLICY "Users can create own bookings"
 
 -- User có thể hủy booking của mình (chỉ khi đang pending)
 -- Logic giới hạn thêm (chỉ hủy được pending) nên xử lý ở server action
+DROP POLICY IF EXISTS "Users can cancel own bookings" ON bookings;
 CREATE POLICY "Users can cancel own bookings"
   ON bookings
   FOR UPDATE
@@ -199,18 +213,21 @@ CREATE POLICY "Users can cancel own bookings"
   WITH CHECK (auth.uid() = user_id);
 
 -- Admin xem tất cả bookings
+DROP POLICY IF EXISTS "Admin can view all bookings" ON bookings;
 CREATE POLICY "Admin can view all bookings"
   ON bookings
   FOR SELECT
   USING (is_admin());
 
 -- Admin có thể update bất kỳ booking nào (đổi status, cập nhật payment)
+DROP POLICY IF EXISTS "Admin can update any booking" ON bookings;
 CREATE POLICY "Admin can update any booking"
   ON bookings
   FOR UPDATE
   USING (is_admin());
 
 -- Admin có thể xóa booking (edge case: test data cleanup)
+DROP POLICY IF EXISTS "Admin can delete bookings" ON bookings;
 CREATE POLICY "Admin can delete bookings"
   ON bookings
   FOR DELETE
@@ -223,11 +240,13 @@ CREATE POLICY "Admin can delete bookings"
 
 ALTER TABLE tour_tags ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Tour tags viewable by everyone" ON tour_tags;
 CREATE POLICY "Tour tags viewable by everyone"
   ON tour_tags
   FOR SELECT
   USING (true);
 
+DROP POLICY IF EXISTS "Admin can manage tour tags" ON tour_tags;
 CREATE POLICY "Admin can manage tour tags"
   ON tour_tags
   FOR ALL
