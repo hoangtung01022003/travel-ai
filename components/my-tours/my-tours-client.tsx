@@ -23,6 +23,15 @@ interface TourSnap {
   price: number
 }
 
+interface HotelSnap {
+  id: string
+  name: string
+  slug: string
+  cover_image: string | null
+  star_rating: number | null
+  min_price: number
+}
+
 interface Booking {
   id: string
   status: string
@@ -33,7 +42,9 @@ interface Booking {
   payment_method: string
   note: string | null
   created_at: string
+  booking_type: 'tour' | 'hotel'
   tours: TourSnap | null
+  hotels: HotelSnap | null
 }
 
 interface MyToursClientProps {
@@ -64,8 +75,24 @@ const PAYMENT_ICON: Record<string, React.ReactNode> = {
 // ── Single booking card ───────────────────────────────────────────────────────
 
 function BookingCard({ booking }: { booking: Booking }) {
-  const [expanded, setExpanded] = useState(false)
-  const tour = booking.tours
+  const [expanded,  setExpanded]  = useState(false)
+  const [retrying,  setRetrying]  = useState(false)
+  const tour  = booking.tours
+  const hotel = booking.hotels
+  const isHotel = booking.booking_type === 'hotel'
+
+  // Generic item info (works for either type)
+  const itemName      = isHotel ? hotel?.name  : tour?.name
+  const itemSlug      = isHotel ? hotel?.slug  : tour?.slug
+  const itemHref      = isHotel ? `/hotels/${itemSlug}` : `/tours/${itemSlug}`
+  const coverImage    = isHotel ? hotel?.cover_image : tour?.cover_image
+  const unitPrice     = isHotel ? hotel?.min_price   : tour?.price
+  const typeIcon      = isHotel ? '🏨' : '🗺️'
+  const unitLabel     = isHotel ? '/đêm' : '/người'
+  const countLabel    = isHotel
+    ? `${booking.num_people} đêm`
+    : `${booking.num_people} người`
+
   const status = BOOKING_STATUS[booking.status] ?? { label: booking.status, variant: 'default' }
 
   return (
@@ -76,11 +103,11 @@ function BookingCard({ booking }: { booking: Booking }) {
       {/* Main row */}
       <div className="flex gap-0 sm:gap-4">
         {/* Cover image */}
-        {tour?.cover_image && (
+        {coverImage && (
           <div className="relative hidden sm:block w-40 shrink-0">
             <Image
-              src={tour.cover_image}
-              alt={tour.name}
+              src={coverImage}
+              alt={itemName ?? ''}
               fill
               className="object-cover"
               sizes="160px"
@@ -92,15 +119,17 @@ function BookingCard({ booking }: { booking: Booking }) {
         <div className="flex flex-1 flex-col gap-3 p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
-              {tour ? (
+              {itemName ? (
                 <Link
-                  href={`/tours/${tour.slug}`}
+                  href={itemHref}
                   className="font-semibold hover:text-primary transition-colors line-clamp-2"
                 >
-                  {tour.name}
+                  <span className="mr-1">{typeIcon}</span>{itemName}
                 </Link>
               ) : (
-                <p className="font-semibold text-muted-foreground">Tour không tồn tại</p>
+                <p className="font-semibold text-muted-foreground">
+                  {isHotel ? 'Khách sạn không tồn tại' : 'Tour không tồn tại'}
+                </p>
               )}
               <p className="mt-0.5 text-xs text-muted-foreground">
                 Đặt ngày {fmtDate(booking.created_at)}
@@ -117,9 +146,9 @@ function BookingCard({ booking }: { booking: Booking }) {
             </span>
             <span className="flex items-center gap-1.5">
               <Users className="h-4 w-4" />
-              {booking.num_people} người
+              {countLabel}
             </span>
-            {tour?.duration_days && (
+            {!isHotel && tour?.duration_days && (
               <span className="flex items-center gap-1.5">
                 <Clock className="h-4 w-4" />
                 {tour.duration_days} ngày
@@ -170,8 +199,8 @@ function BookingCard({ booking }: { booking: Booking }) {
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Giá/người</p>
-                <p className="font-medium">{tour ? fmtVND(Number(tour.price)) : '—'}</p>
+                <p className="text-xs text-muted-foreground">Giá{unitLabel}</p>
+                <p className="font-medium">{unitPrice ? fmtVND(Number(unitPrice)) : '—'}</p>
               </div>
               {booking.note && (
                 <div className="col-span-2 sm:col-span-3">
@@ -187,10 +216,20 @@ function BookingCard({ booking }: { booking: Booking }) {
                 <p className="text-sm text-amber-600 flex items-center gap-1">
                   <AlertCircle className="h-4 w-4" /> Booking chưa được thanh toán
                 </p>
-                <Button size="sm" variant="outline" asChild>
-                  <Link href={`/api/payment/retry?id=${booking.id}`}>
-                    Thanh toán lại
-                  </Link>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={retrying}
+                  onClick={() => {
+                    setRetrying(true)
+                    // Dùng window.location.href để full-page GET (gửi đủ cookies auth)
+                    window.location.href = `/api/payment/retry?id=${booking.id}`
+                  }}
+                >
+                  {retrying
+                    ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Đang chuyển hướng...</>
+                    : 'Thanh toán lại'
+                  }
                 </Button>
               </div>
             )}

@@ -18,9 +18,12 @@ export default async function MyToursPage() {
     .from('bookings')
     .select(`
       id, status, payment_status, num_people, travel_date,
-      total_price, payment_method, note, created_at,
+      total_price, payment_method, note, created_at, booking_type,
       tours (
         id, name, slug, cover_image, duration_days, price
+      ),
+      hotels (
+        id, name, slug, cover_image, star_rating, min_price
       )
     `)
     .eq('user_id', user.id)

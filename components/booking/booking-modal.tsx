@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -66,8 +66,9 @@ export default function BookingModal({
     }
   }
 
-  // Prefill whenever modal opens
-  useState(() => { if (open) prefillFromProfile() })
+  // Prefill whenever modal opens — dùng useEffect, KHÔNG dùng useState
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (open) prefillFromProfile() }, [open])
 
   const handleBook = async () => {
     setError('')
@@ -83,22 +84,33 @@ export default function BookingModal({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabase as any
 
+      // ── Build insert payload theo type ──────────────────────────────────────
+      // bookings schema: tour_id nullable, hotel_id nullable, booking_type enum
+      const bookingPayload: Record<string, unknown> = {
+        user_id:        user.id,
+        booking_type:   type,                 // 'tour' | 'hotel'
+        num_people:     people,
+        travel_date:    date,
+        total_price:    totalPrice,
+        note:           [
+          name  ? `Tên: ${name}` : '',
+          phone ? `SĐT: ${phone}` : '',
+          email ? `Email: ${email}` : '',
+          note  ? `Ghi chú: ${note}` : '',
+        ].filter(Boolean).join(' | ') || null,
+        payment_method: 'vnpay',
+      }
+
+      // Gán đúng FK theo type — tránh FK constraint violation
+      if (type === 'tour') {
+        bookingPayload.tour_id  = itemId
+      } else {
+        bookingPayload.hotel_id = itemId
+      }
+
       const { data: booking, error: bookingErr } = await db
         .from('bookings')
-        .insert({
-          user_id:        user.id,
-          tour_id:        itemId,
-          num_people:     people,
-          travel_date:    date,
-          total_price:    totalPrice,
-          note:           [
-            name  ? `Tên: ${name}` : '',
-            phone ? `SĐT: ${phone}` : '',
-            email ? `Email: ${email}` : '',
-            note  ? `Ghi chú: ${note}` : '',
-          ].filter(Boolean).join(' | ') || null,
-          payment_method: 'vnpay',
-        })
+        .insert(bookingPayload)
         .select('id')
         .single()
 
