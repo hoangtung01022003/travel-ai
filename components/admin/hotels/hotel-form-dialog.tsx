@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea'
 import {
   adminCreateHotel, adminUpdateHotel,
 } from '@/components/admin/actions/admin-crud-actions'
+import { ImageUpload } from '@/components/admin/shared/image-upload'
 import type { Database } from '@/types/database'
 
 type Hotel = Database['public']['Tables']['hotels']['Row']
@@ -135,8 +136,12 @@ export function HotelFormDialog({ mode, hotel, destinations }: HotelFormDialogPr
             <Input value={form.address} onChange={(e) => set('address', e.target.value)} placeholder="Số 1 đường..." />
           </div>
           <div className="space-y-1.5">
-            <Label>Ảnh bìa (URL)</Label>
-            <Input value={form.cover_image} onChange={(e) => set('cover_image', e.target.value)} placeholder="https://..." />
+            <Label>Ảnh bìa</Label>
+             <ImageUpload 
+              value={form.cover_image} 
+              onChange={(url) => set('cover_image', url)} 
+              folder="hotels" 
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Mô tả</Label>

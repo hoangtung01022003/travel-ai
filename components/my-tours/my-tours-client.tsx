@@ -5,12 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
-  MapPin, Calendar, Users, Clock, ChevronDown,
+  Calendar, Users, Clock, ChevronDown,
   CreditCard, CheckCircle2, XCircle, AlertCircle,
-  Loader2, ShoppingBag,
+  Loader2, ShoppingBag, Star,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import ReviewForm from '@/components/review/review-form'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -32,6 +33,13 @@ interface HotelSnap {
   min_price: number
 }
 
+interface ExistingReview {
+  id: string
+  rating: number
+  comment: string | null
+  created_at: string
+}
+
 interface Booking {
   id: string
   status: string
@@ -45,6 +53,7 @@ interface Booking {
   booking_type: 'tour' | 'hotel'
   tours: TourSnap | null
   hotels: HotelSnap | null
+  reviews: ExistingReview[] | null
 }
 
 interface MyToursClientProps {
@@ -59,11 +68,12 @@ const fmtVND = (n: number) =>
 const fmtDate = (d: string) =>
   new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
 
-const BOOKING_STATUS: Record<string, { label: string; variant: 'default' | 'warning' | 'success' | 'destructive' }> = {
+const BOOKING_STATUS: Record<string, { label: string; variant: 'default' | 'warning' | 'success' | 'destructive' | 'muted' }> = {
   pending:   { label: 'Chờ thanh toán',  variant: 'warning' },
   confirmed: { label: 'Đã xác nhận',     variant: 'success' },
+  completed: { label: 'Hoàn thành',       variant: 'default' },
   cancelled: { label: 'Đã hủy',          variant: 'destructive' },
-  refunded:  { label: 'Đã hoàn tiền',    variant: 'default' },
+  refunded:  { label: 'Đã hoàn tiền',    variant: 'muted' },
 }
 
 const PAYMENT_ICON: Record<string, React.ReactNode> = {
@@ -77,6 +87,11 @@ const PAYMENT_ICON: Record<string, React.ReactNode> = {
 function BookingCard({ booking }: { booking: Booking }) {
   const [expanded,  setExpanded]  = useState(false)
   const [retrying,  setRetrying]  = useState(false)
+  // Supabase trả về reviews là array (viên cấp 1 từ bookings.reviews)
+  const existingReview = (booking.reviews && booking.reviews.length > 0)
+    ? booking.reviews[0]
+    : null
+  const [localReview, setLocalReview] = useState<ExistingReview | null>(existingReview)
   const tour  = booking.tours
   const hotel = booking.hotels
   const isHotel = booking.booking_type === 'hotel'
@@ -231,6 +246,47 @@ function BookingCard({ booking }: { booking: Booking }) {
                     : 'Thanh toán lại'
                   }
                 </Button>
+              </div>
+            )}
+            {/* ── Review section — chỉ hiện khi completed ───────────────── */}
+            {booking.status === 'completed' && (
+              <div className="border-t border-border px-5 py-4">
+                {localReview ? (
+                  /* Đã review rồi → hiện review đã gửi */
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      Đánh giá của bạn
+                    </p>
+                    <div className="flex items-center gap-1">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star
+                          key={s}
+                          className={`h-4 w-4 ${s <= localReview.rating ? 'fill-amber-400 text-amber-400' : 'text-border'}`}
+                        />
+                      ))}
+                      <span className="ml-1 text-sm font-medium">
+                        {['', 'Rất tệ', 'Tệ', 'Bình thường', 'Tốt', 'Xuất sắc'][localReview.rating]}
+                      </span>
+                    </div>
+                    {localReview.comment && (
+                      <p className="text-sm text-muted-foreground italic">
+                        &ldquo;{localReview.comment}&rdquo;
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Đã gửi ngày {fmtDate(localReview.created_at)}
+                    </p>
+                  </div>
+                ) : (
+                  /* Chưa review → hiện ReviewForm */
+                  <ReviewForm
+                    bookingId={booking.id}
+                    targetType={booking.booking_type}
+                    targetId={isHotel ? (hotel?.id ?? '') : (tour?.id ?? '')}
+                    itemName={itemName ?? ''}
+                    onSuccess={(review) => setLocalReview(review)}
+                  />
+                )}
               </div>
             )}
           </motion.div>

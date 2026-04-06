@@ -24,6 +24,9 @@ export default async function MyToursPage() {
       ),
       hotels (
         id, name, slug, cover_image, star_rating, min_price
+      ),
+      reviews (
+        id, rating, comment, created_at
       )
     `)
     .eq('user_id', user.id)
@@ -31,3 +34,4 @@ export default async function MyToursPage() {
 
   return <MyToursClient bookings={bookings ?? []} />
 }
+

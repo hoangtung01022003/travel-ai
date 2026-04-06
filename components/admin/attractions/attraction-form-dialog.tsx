@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { ImageUpload } from '@/components/admin/shared/image-upload'
 import {
   adminCreateAttraction, adminUpdateAttraction,
 } from '@/components/admin/actions/admin-crud-actions'
@@ -100,8 +101,8 @@ export function AttractionFormDialog({ mode, attraction, destinations }: Attract
           </div>
 
           <div className="space-y-1.5">
-            <Label>Ảnh (URL)</Label>
-            <Input value={form.image_url} onChange={(e) => set('image_url', e.target.value)} placeholder="https://..." />
+            <Label>Ảnh đại diện</Label>
+            <ImageUpload value={form.image_url} onChange={(url) => set('image_url', url)} folder="attractions" />
           </div>
           <div className="space-y-1.5">
             <Label>Mô tả</Label>

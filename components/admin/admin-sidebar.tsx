@@ -12,6 +12,7 @@ import {
   Users,
   MessageSquare,
   Bot,
+  Receipt,
   ChevronRight,
   Shield,
 } from 'lucide-react'
@@ -26,6 +27,7 @@ const iconMap: Record<string, React.ElementType> = {
   Tags,
   Users,
   MessageSquare,
+  Receipt,
   Bot,
 }
 
@@ -37,6 +39,7 @@ const NAV_ITEMS = [
   { href: '/admin/tours', label: 'Tour', icon: 'Route' },
   { href: '/admin/tags', label: 'Tags', icon: 'Tags' },
   { href: '/admin/users', label: 'Users', icon: 'Users' },
+  { href: '/admin/bookings', label: 'Bookings', icon: 'Receipt' },
   { href: '/admin/reviews', label: 'Reviews', icon: 'MessageSquare' },
   { href: '/admin/ai-logs', label: 'AI Logs', icon: 'Bot' },
 ] as const

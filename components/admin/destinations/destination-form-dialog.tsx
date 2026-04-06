@@ -20,6 +20,7 @@ import {
   adminCreateDestination,
   adminUpdateDestination,
 } from '@/components/admin/actions/admin-crud-actions'
+import { ImageUpload } from '@/components/admin/shared/image-upload'
 import type { Database } from '@/types/database'
 
 type Destination = Database['public']['Tables']['destinations']['Row']
@@ -197,8 +198,12 @@ export function DestinationFormDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="dest-cover">Ảnh bìa (URL)</Label>
-            <Input id="dest-cover" value={form.cover_image} onChange={(e) => set('cover_image', e.target.value)} placeholder="https://..." />
+            <Label>Ảnh bìa</Label>
+            <ImageUpload 
+              value={form.cover_image} 
+              onChange={(url) => set('cover_image', url)} 
+              folder="destinations" 
+            />
           </div>
 
           <div className="space-y-1.5">
