@@ -9,6 +9,9 @@ export const getDestinations = createServerAction(
     search?: string
     type?: string
     region?: string
+    minPrice?: number
+    maxPrice?: number
+    minRating?: number
     limit?: number
     offset?: number
     featured?: boolean
@@ -30,6 +33,15 @@ export const getDestinations = createServerAction(
     }
     if (params?.region) {
       query = query.eq('region', params.region)
+    }
+    if (params?.minPrice !== undefined && params.minPrice > 0) {
+      query = query.gte('min_price', params.minPrice)
+    }
+    if (params?.maxPrice !== undefined && params.maxPrice > 0) {
+      query = query.lte('min_price', params.maxPrice)
+    }
+    if (params?.minRating !== undefined && params.minRating > 0) {
+      query = query.gte('avg_rating', params.minRating)
     }
     if (params?.featured) {
       query = query.eq('is_featured', true)
@@ -82,8 +94,6 @@ export const getDestinationBySlug = createServerAction(
       .eq('target_type', 'destination')
       .eq('is_visible', true)
       .order('created_at', { ascending: false })
-
-    console.log('data', reviews)
 
     if (reviewError) throw new Error(reviewError.message)
 

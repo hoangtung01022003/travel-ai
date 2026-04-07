@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { createClient } from '@/lib/supabase/client'
+import { toast } from 'sonner'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -43,18 +44,20 @@ const ROLE_LABEL: Record<string, string> = {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function ProfileClient({ profile, userEmail }: ProfileClientProps) {
-  const [editing, setEditing]   = useState(false)
-  const [saving,  setSaving]    = useState(false)
-  const [success, setSuccess]   = useState(false)
-  const [error,   setError]     = useState('')
+  // Local profile state — cập nhật ngay sau khi save thành công
+  const [localProfile, setLocalProfile] = useState<Profile | null>(profile)
 
+  const [editing, setEditing] = useState(false)
+  const [saving,  setSaving]  = useState(false)
+  const [error,   setError]   = useState('')
+
+  // Edit form values
   const [fullName, setFullName] = useState(profile?.full_name ?? '')
   const [phone,    setPhone]    = useState(profile?.phone ?? '')
 
   const handleSave = async () => {
     setSaving(true)
     setError('')
-    setSuccess(false)
     try {
       const supabase = createClient()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -65,12 +68,21 @@ export default function ProfileClient({ profile, userEmail }: ProfileClientProps
           phone:      phone.trim() || null,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', profile?.id)
+        .eq('id', localProfile?.id)
 
-      if (err) { setError(err.message); return }
-      setSuccess(true)
+      if (err) {
+        setError(err.message)
+        return
+      }
+
+      // ✅ Cập nhật local state ngay lập tức — không cần reload
+      setLocalProfile((prev) =>
+        prev
+          ? { ...prev, full_name: fullName.trim() || null, phone: phone.trim() || null }
+          : prev
+      )
       setEditing(false)
-      setTimeout(() => setSuccess(false), 3000)
+      toast.success('Cập nhật thông tin thành công!')
     } catch {
       setError('Lỗi kết nối. Vui lòng thử lại.')
     } finally {
@@ -79,14 +91,16 @@ export default function ProfileClient({ profile, userEmail }: ProfileClientProps
   }
 
   const handleCancel = () => {
-    setFullName(profile?.full_name ?? '')
-    setPhone(profile?.phone ?? '')
+    // Reset về giá trị hiện tại của localProfile
+    setFullName(localProfile?.full_name ?? '')
+    setPhone(localProfile?.phone ?? '')
     setEditing(false)
     setError('')
   }
 
-  const displayEmail = profile?.email || userEmail
-  const initial = (profile?.full_name || displayEmail || 'U').charAt(0).toUpperCase()
+  const displayEmail = localProfile?.email || userEmail
+  // Avatar initial được derive từ localProfile — cập nhật ngay khi save
+  const initial = (localProfile?.full_name || displayEmail || 'U').charAt(0).toUpperCase()
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
@@ -105,15 +119,15 @@ export default function ProfileClient({ profile, userEmail }: ProfileClientProps
             </Avatar>
             <div className="flex-1 min-w-0">
               <h1 className="text-xl font-bold truncate">
-                {profile?.full_name || 'Người dùng'}
+                {localProfile?.full_name || 'Người dùng'}
               </h1>
               <p className="text-sm text-muted-foreground truncate">{displayEmail}</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 <span className="rounded-full bg-primary/10 px-3 py-0.5 text-xs font-medium text-primary">
-                  {ROLE_LABEL[profile?.role ?? 'user'] ?? profile?.role}
+                  {ROLE_LABEL[localProfile?.role ?? 'user'] ?? localProfile?.role}
                 </span>
                 <span className="rounded-full bg-emerald-100 px-3 py-0.5 text-xs font-medium text-emerald-700">
-                  {profile?.status === 'active' ? '✓ Hoạt động' : profile?.status}
+                  {localProfile?.status === 'active' ? '✓ Hoạt động' : localProfile?.status}
                 </span>
               </div>
             </div>
@@ -135,7 +149,7 @@ export default function ProfileClient({ profile, userEmail }: ProfileClientProps
                 </Button>
                 <Button size="sm" className="gap-1.5" onClick={handleSave} disabled={saving}>
                   {saving
-                    ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Lưu...</>
+                    ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Đang lưu...</>
                     : <><Save className="h-3.5 w-3.5" /> Lưu</>
                   }
                 </Button>
@@ -156,7 +170,9 @@ export default function ProfileClient({ profile, userEmail }: ProfileClientProps
                   placeholder="Nguyễn Văn A"
                 />
               ) : (
-                <p className="text-sm font-medium pl-1">{profile?.full_name || <span className="text-muted-foreground italic">Chưa cập nhật</span>}</p>
+                <p className="text-sm font-medium pl-1">
+                  {localProfile?.full_name || <span className="text-muted-foreground italic">Chưa cập nhật</span>}
+                </p>
               )}
             </div>
 
@@ -181,7 +197,9 @@ export default function ProfileClient({ profile, userEmail }: ProfileClientProps
                   placeholder="0901 234 567"
                 />
               ) : (
-                <p className="text-sm font-medium pl-1">{profile?.phone || <span className="text-muted-foreground italic">Chưa cập nhật</span>}</p>
+                <p className="text-sm font-medium pl-1">
+                  {localProfile?.phone || <span className="text-muted-foreground italic">Chưa cập nhật</span>}
+                </p>
               )}
             </div>
 
@@ -190,29 +208,33 @@ export default function ProfileClient({ profile, userEmail }: ProfileClientProps
               <Label className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <Shield className="h-3.5 w-3.5" /> Vai trò
               </Label>
-              <p className="text-sm font-medium pl-1">{ROLE_LABEL[profile?.role ?? 'user'] ?? profile?.role}</p>
+              <p className="text-sm font-medium pl-1">
+                {ROLE_LABEL[localProfile?.role ?? 'user'] ?? localProfile?.role}
+              </p>
             </div>
 
             {/* Joined */}
-            {profile?.created_at && (
+            {localProfile?.created_at && (
               <div className="space-y-1.5">
                 <Label className="flex items-center gap-1.5 text-sm text-muted-foreground">
                   <Calendar className="h-3.5 w-3.5" /> Ngày tham gia
                 </Label>
-                <p className="text-sm font-medium pl-1">{fmtDate(profile.created_at)}</p>
+                <p className="text-sm font-medium pl-1">{fmtDate(localProfile.created_at)}</p>
               </div>
             )}
           </div>
 
-          {/* Messages */}
+          {/* Error */}
           {error && (
             <div className="mt-4 flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
               <X className="h-4 w-4 shrink-0" /> {error}
             </div>
           )}
-          {success && (
-            <div className="mt-4 flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-              <CheckCircle2 className="h-4 w-4 shrink-0" /> Cập nhật thành công!
+
+          {/* Success hint when not editing */}
+          {!editing && !error && localProfile?.full_name && (
+            <div className="mt-4 flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700 opacity-0 pointer-events-none h-0 overflow-hidden" aria-hidden>
+              <CheckCircle2 className="h-4 w-4 shrink-0" /> Thông tin đã được cập nhật
             </div>
           )}
         </div>

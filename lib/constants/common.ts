@@ -5,7 +5,7 @@ export const AUTH_PATHS = [
   '/link-expired',
 ]
 
-export const PUBLIC_PATHS = ['/', '/tours', '/destinations', '/hotels']
+export const PUBLIC_PATHS = ['/', '/tours', '/destinations', '/hotels', '/ai-planner']
 
 export const APP_NAME = 'VietTravel'
 export const APP_DESCRIPTION = 'Khám phá Việt Nam - Nền tảng du lịch thông minh'

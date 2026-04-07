@@ -1,3 +1,5 @@
+'use server'
+
 import { createServerAction } from '@/lib/utils/server-actions'
 import { createClient } from '@/lib/supabase/server'
 import { Tour } from '@/types/tour'
@@ -5,9 +7,11 @@ import { Tour } from '@/types/tour'
 export const getTours = createServerAction(
   async (params?: {
     search?: string
-    difficulty?: string
+    minPrice?: number
+    maxPrice?: number
     minDays?: number
     maxDays?: number
+    destinationId?: string
     limit?: number
     offset?: number
   }) => {
@@ -24,11 +28,20 @@ export const getTours = createServerAction(
         `name.ilike.%${params.search}%,description.ilike.%${params.search}%`
       )
     }
+    if (params?.minPrice !== undefined && params.minPrice > 0) {
+      query = query.gte('price', params.minPrice)
+    }
+    if (params?.maxPrice !== undefined && params.maxPrice > 0) {
+      query = query.lte('price', params.maxPrice)
+    }
     if (params?.minDays) {
       query = query.gte('duration_days', params.minDays)
     }
     if (params?.maxDays) {
       query = query.lte('duration_days', params.maxDays)
+    }
+    if (params?.destinationId) {
+      query = query.eq('destination_id', params.destinationId)
     }
     if (params?.limit) {
       query = query.limit(params.limit)

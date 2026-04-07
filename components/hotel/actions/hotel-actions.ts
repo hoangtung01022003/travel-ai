@@ -9,6 +9,9 @@ export const getHotels = createServerAction(
     search?: string
     starRating?: number
     province?: string
+    minPrice?: number
+    maxPrice?: number
+    minRating?: number
     limit?: number
     offset?: number
     featured?: boolean
@@ -30,6 +33,15 @@ export const getHotels = createServerAction(
     }
     if (params?.province) {
       query = query.ilike('province', `%${params.province}%`)
+    }
+    if (params?.minPrice !== undefined && params.minPrice > 0) {
+      query = query.gte('min_price', params.minPrice)
+    }
+    if (params?.maxPrice !== undefined && params.maxPrice > 0) {
+      query = query.lte('min_price', params.maxPrice)
+    }
+    if (params?.minRating !== undefined && params.minRating > 0) {
+      query = query.gte('avg_rating', params.minRating)
     }
     if (params?.featured) {
       query = query.eq('is_featured', true)

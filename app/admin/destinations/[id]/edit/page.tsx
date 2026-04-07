@@ -41,11 +41,24 @@ export default async function AdminDestinationEditPage({ params }: Props) {
 
       <DestinationEditClient
         destination={destination}
-        attractions={attractions ?? []}
-        allAttractions={allAttractions ?? []}
+        attractions={(attractions ?? []).map((a) => ({
+          ...a,
+          description: a.description ?? '',
+          image_url: a.image_url ?? '',
+          entry_fee: a.entry_fee ?? 0,
+          sort_order: a.sort_order ?? undefined,
+        }))}
+        allAttractions={(allAttractions ?? []).map((a) => ({
+          id: a.id,
+          name: a.name,
+          description: a.description ?? '',
+          image_url: a.image_url ?? '',
+          entry_fee: a.entry_fee ?? 0,
+          destination_id: a.destination_id ?? null,
+        }))}
         destImages={destImages ?? []}
         allTags={tags ?? []}
-        selectedTagIds={(destTags ?? []).map((t: any) => t.tag_id)}
+        selectedTagIds={(destTags ?? []).map((t: { tag_id: string }) => t.tag_id)}
       />
     </div>
   )

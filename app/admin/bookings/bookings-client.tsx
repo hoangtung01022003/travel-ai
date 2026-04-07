@@ -149,7 +149,7 @@ function BookingDetailDialog({ booking, onClose }: { booking: Booking; onClose: 
           {/* Change status */}
           <div className="flex items-center justify-between border-t border-border pt-4">
             <p className="text-sm text-muted-foreground">Đổi trạng thái:</p>
-            <BookingStatusAction bookingId={booking.id} currentStatus={booking.status} />
+            <BookingStatusAction bookingId={booking.id} currentStatus={booking.status} paymentStatus={booking.payment_status} />
           </div>
         </div>
       </div>
@@ -382,7 +382,7 @@ export default function BookingsClient({ bookings, totalRevenue }: BookingsClien
                             <Eye className="h-3.5 w-3.5" />
                           </Button>
                           <div onClick={(e) => e.stopPropagation()}>
-                            <BookingStatusAction bookingId={booking.id} currentStatus={booking.status} />
+                            <BookingStatusAction bookingId={booking.id} currentStatus={booking.status} paymentStatus={booking.payment_status} />
                           </div>
                         </div>
                       </td>

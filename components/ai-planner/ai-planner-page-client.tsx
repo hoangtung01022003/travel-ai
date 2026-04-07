@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useTransition } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -21,12 +21,21 @@ import {
   Route,
   Zap,
   Coffee,
+  Save,
+  X,
+  CheckCircle2,
+  Info,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import { toast } from 'sonner'
 import type { AiItinerary, AiActivity } from '@/lib/schemas/ai-itinerary.schema'
+import { saveItinerary } from './actions/ai-planner-actions'
+
+// ── Constants ──────────────────────────────────────────────────────────────────
+const AI_PLAN_LIMIT = 10
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -48,6 +57,8 @@ interface SuggestedTour {
 
 interface AiPlannerPageProps {
   destinations: DestinationOption[]
+  isLoggedIn: boolean
+  currentPlanCount: number
 }
 
 // ── Activity config ───────────────────────────────────────────────────────────
@@ -57,10 +68,10 @@ const activityConfig: Record<
   { icon: React.ElementType; color: string; bg: string; label: string }
 > = {
   attraction: { icon: Camera, color: 'text-violet-600', bg: 'bg-violet-100', label: 'Tham quan' },
-  food:        { icon: Utensils, color: 'text-orange-500', bg: 'bg-orange-100', label: 'Ăn uống' },
-  transport:   { icon: Car, color: 'text-blue-500', bg: 'bg-blue-100', label: 'Di chuyển' },
-  hotel:       { icon: Hotel, color: 'text-emerald-600', bg: 'bg-emerald-100', label: 'Nghỉ ngơi' },
-  activity:    { icon: Zap, color: 'text-pink-500', bg: 'bg-pink-100', label: 'Hoạt động' },
+  food:       { icon: Utensils, color: 'text-orange-500', bg: 'bg-orange-100', label: 'Ăn uống' },
+  transport:  { icon: Car, color: 'text-blue-500', bg: 'bg-blue-100', label: 'Di chuyển' },
+  hotel:      { icon: Hotel, color: 'text-emerald-600', bg: 'bg-emerald-100', label: 'Nghỉ ngơi' },
+  activity:   { icon: Zap, color: 'text-pink-500', bg: 'bg-pink-100', label: 'Hoạt động' },
 }
 
 const defaultConfig = { icon: Coffee, color: 'text-gray-500', bg: 'bg-gray-100', label: 'Khác' }
@@ -82,15 +93,12 @@ function ActivityRow({ act, isLast }: { act: AiActivity; isLast: boolean }) {
 
   return (
     <div className="flex gap-3">
-      {/* connector line + dot */}
       <div className="flex flex-col items-center">
         <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${cfg.bg}`}>
           <Icon className={`h-3.5 w-3.5 ${cfg.color}`} />
         </div>
         {!isLast && <div className="w-px flex-1 bg-border" style={{ minHeight: 16 }} />}
       </div>
-
-      {/* content */}
       <div className="pb-3 pt-0.5 min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="text-xs font-mono text-muted-foreground w-10 shrink-0">
@@ -121,16 +129,13 @@ function DayCard({
       transition={{ delay: index * 0.07 }}
       className="overflow-hidden rounded-2xl border border-border bg-white"
     >
-      {/* Header */}
       <button
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-muted/40"
       >
-        {/* Day badge */}
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-white shadow-sm">
           {day.day}
         </div>
-
         <div className="flex-1 min-w-0">
           <p className="font-semibold truncate">{day.title}</p>
           <p className="text-xs text-muted-foreground mt-0.5">
@@ -138,13 +143,11 @@ function DayCard({
             <span className="font-medium text-primary">{formatVND(day.cost)}</span>
           </p>
         </div>
-
         <ChevronDown
           className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
 
-      {/* Activity list */}
       <AnimatePresence initial={false}>
         {open && (
           <motion.div
@@ -172,7 +175,11 @@ function DayCard({
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export default function AiPlannerPageClient({ destinations }: AiPlannerPageProps) {
+export default function AiPlannerPageClient({
+  destinations,
+  isLoggedIn,
+  currentPlanCount,
+}: AiPlannerPageProps) {
   const searchParams = useSearchParams()
 
   const [formData, setFormData] = useState({
@@ -183,7 +190,6 @@ export default function AiPlannerPageClient({ destinations }: AiPlannerPageProps
     interests: '',
   })
 
-  // Pre-fill destination from URL param (?destination=Đà+Nẵng)
   useEffect(() => {
     const dest = searchParams.get('destination')
     if (dest) setFormData((p) => ({ ...p, destination: dest }))
@@ -193,6 +199,12 @@ export default function AiPlannerPageClient({ destinations }: AiPlannerPageProps
   const [result, setResult] = useState<AiItinerary | null>(null)
   const [suggestedTours, setSuggestedTours] = useState<SuggestedTour[]>([])
   const [error, setError] = useState('')
+
+  // Save flow state
+  const [isSaving, startSaveTransition] = useTransition()
+  const [saved, setSaved] = useState(false)
+  // Track plan count locally (updated after each save)
+  const [planCount, setPlanCount] = useState(currentPlanCount)
 
   // Destination autocomplete
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -214,6 +226,7 @@ export default function AiPlannerPageClient({ destinations }: AiPlannerPageProps
     setResult(null)
     setSuggestedTours([])
     setError('')
+    setSaved(false)
 
     try {
       const res = await fetch('/api/ai/generate-itinerary', {
@@ -241,6 +254,49 @@ export default function AiPlannerPageClient({ destinations }: AiPlannerPageProps
     }
   }
 
+  // ── Save handler ──────────────────────────────────────────────────────────────
+  const handleSave = () => {
+    if (!result) return
+    if (!isLoggedIn) {
+      toast.error('Bạn cần đăng nhập để lưu lịch trình')
+      return
+    }
+    if (planCount >= AI_PLAN_LIMIT) {
+      toast.error(`Đã đạt giới hạn ${AI_PLAN_LIMIT} lịch trình. Vào /itineraries để xóa bớt.`)
+      return
+    }
+
+    startSaveTransition(async () => {
+      const res = await saveItinerary({
+        title:            result.title ?? `Lịch trình ${formData.destination}`,
+        destination_name: formData.destination,
+        duration_days:    result.duration_days,
+        budget:           formData.budget ? Number(formData.budget) : null,
+        num_people:       Number(formData.people),
+        result,
+        prompt:           [formData.destination, formData.days, formData.people, formData.interests].join(' | '),
+      })
+
+      if (res.success) {
+        setSaved(true)
+        setPlanCount((c) => c + 1)
+        toast.success('Đã lưu lịch trình vào trang Lịch trình của tôi!')
+      } else {
+        toast.error(res.error ?? 'Không thể lưu lịch trình')
+      }
+    })
+  }
+
+  // ── Cancel handler ────────────────────────────────────────────────────────────
+  const handleCancel = () => {
+    setResult(null)
+    setSuggestedTours([])
+    setSaved(false)
+    setError('')
+  }
+
+  const isAtLimit = planCount >= AI_PLAN_LIMIT
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Hero */}
@@ -258,6 +314,26 @@ export default function AiPlannerPageClient({ destinations }: AiPlannerPageProps
         <p className="mx-auto max-w-xl text-muted-foreground">
           Nhập địa điểm và sở thích — AI tạo lịch trình chi tiết theo từng giờ cho bạn
         </p>
+
+        {/* Quota info (only when logged in) */}
+        {isLoggedIn && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className={`mt-4 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium ${
+              isAtLimit
+                ? 'bg-destructive/10 text-destructive'
+                : planCount >= 7
+                  ? 'bg-amber-50 text-amber-700'
+                  : 'bg-muted text-muted-foreground'
+            }`}
+          >
+            <Info className="h-3.5 w-3.5" />
+            {planCount}/{AI_PLAN_LIMIT} lịch trình đã lưu
+            {isAtLimit && ' — Vui lòng xóa bớt'}
+          </motion.div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
@@ -491,13 +567,68 @@ export default function AiPlannerPageClient({ destinations }: AiPlannerPageProps
                   </div>
                 )}
 
-                {/* Reset */}
-                <Button
-                  variant="outline"
-                  onClick={() => { setResult(null); setSuggestedTours([]) }}
-                >
-                  Tạo lại
-                </Button>
+                {/* ── Save / Cancel / Reset actions ────────────────────── */}
+                <div className="rounded-2xl border border-border bg-white p-5">
+                  {saved ? (
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-emerald-700">
+                        <CheckCircle2 className="h-5 w-5" />
+                        <span className="font-medium">Đã lưu lịch trình thành công!</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" asChild size="sm">
+                          <a href="/itineraries">Xem lịch trình</a>
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={handleCancel}>
+                          Tạo mới
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-sm text-muted-foreground">
+                        {isLoggedIn
+                          ? isAtLimit
+                            ? `⚠️ Bạn đã đạt giới hạn ${AI_PLAN_LIMIT} lịch trình. Hãy xóa bớt trong trang Lịch trình.`
+                            : 'Bạn có muốn lưu lịch trình này không?'
+                          : '💡 Đăng nhập để lưu lịch trình này vào tài khoản của bạn.'}
+                      </p>
+                      <div className="flex flex-wrap gap-3">
+                        {isLoggedIn && !isAtLimit && (
+                          <Button
+                            className="gap-2"
+                            onClick={handleSave}
+                            disabled={isSaving}
+                          >
+                            {isSaving
+                              ? <><Loader2 className="h-4 w-4 animate-spin" /> Đang lưu...</>
+                              : <><Save className="h-4 w-4" /> Lưu lịch trình</>
+                            }
+                          </Button>
+                        )}
+                        {isLoggedIn && isAtLimit && (
+                          <Button variant="outline" asChild size="sm">
+                            <a href="/itineraries">Quản lý lịch trình</a>
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          className="gap-2"
+                          onClick={handleCancel}
+                        >
+                          <X className="h-4 w-4" /> Hủy
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          className="gap-2 text-muted-foreground"
+                          onClick={() => { setResult(null); setSuggestedTours([]); setSaved(false) }}
+                        >
+                          <Clock className="h-4 w-4" /> Tạo lại
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </motion.div>
             )}
           </AnimatePresence>

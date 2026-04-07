@@ -1,53 +1,43 @@
-import { Bell } from 'lucide-react'
-
-import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export default function Loading() {
   return (
-    <div className="container mx-auto max-w-6xl px-6 py-8">
-      <div className="mb-8">
-        <div className="mb-3 flex items-center gap-3">
-          <div className="bg-primary/10 flex h-12 w-12 items-center justify-center rounded-xl">
-            <Bell className="text-primary h-6 w-6" />
-          </div>
-          <div>
-            <h1 className="text-foreground text-3xl font-semibold tracking-tight">
-              Latest Updates
-            </h1>
-            <p className="text-muted-foreground mt-0.5 text-sm">
-              Stay up to date with the latest travel activities and updates
-            </p>
-          </div>
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      {/* Hero skeleton */}
+      <div className="mb-12 text-center space-y-4">
+        <Skeleton className="mx-auto h-10 w-80 rounded-full" />
+        <Skeleton className="mx-auto h-14 w-2/3" />
+        <Skeleton className="mx-auto h-5 w-1/2" />
+        <div className="flex justify-center gap-3 mt-4">
+          <Skeleton className="h-11 w-36 rounded-xl" />
+          <Skeleton className="h-11 w-36 rounded-xl" />
         </div>
       </div>
 
-      <Card className="border-border/50 p-5 shadow-sm">
-        <div className="flex gap-4">
-          <div className="shrink-0">
-            <Skeleton className="h-12 w-12 rounded-xl" />
-          </div>
+      {/* Section title */}
+      <div className="mb-6 flex items-center justify-between">
+        <Skeleton className="h-8 w-56" />
+        <Skeleton className="h-9 w-24 rounded-xl" />
+      </div>
 
-          <div className="min-w-0 flex-1">
-            <div className="mb-2 flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1 space-y-2">
-                <Skeleton className="h-5 w-24" />
-                <Skeleton className="h-5 w-3/4" />
-              </div>
-              <Skeleton className="h-4 w-10" />
-            </div>
-
-            <div className="mb-3 space-y-2">
+      {/* Card grid */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="overflow-hidden rounded-2xl border border-border bg-white">
+            <Skeleton className="h-52 w-full rounded-none" />
+            <div className="p-4 space-y-3">
+              <Skeleton className="h-4 w-1/3" />
+              <Skeleton className="h-5 w-3/4" />
               <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-5/6" />
-            </div>
-
-            <div className="border-border/50 flex items-center gap-2 border-t pt-2">
-              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-2/3" />
+              <div className="flex items-center justify-between pt-1">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-24" />
+              </div>
             </div>
           </div>
-        </div>
-      </Card>
+        ))}
+      </div>
     </div>
   )
 }

@@ -17,18 +17,32 @@ async function AiPlannerContent() {
     .select('id, name, slug, province, destination_type')
     .order('name')
 
-  return <AiPlannerPageClient destinations={destinations ?? []} />
+  // Lấy số lượng plan hiện tại của user (để hiện quota)
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  let currentPlanCount = 0
+  if (user) {
+    const { count } = await supabase
+      .from('ai_itineraries')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+    currentPlanCount = count ?? 0
+  }
+
+  return (
+    <AiPlannerPageClient
+      destinations={destinations ?? []}
+      isLoggedIn={!!user}
+      currentPlanCount={currentPlanCount}
+    />
+  )
 }
 
 export default function AiPlannerPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-[60vh] items-center justify-center">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/20 border-t-primary" />
-        </div>
-      }
-    >
+    <Suspense fallback={null}>
       <AiPlannerContent />
     </Suspense>
   )
