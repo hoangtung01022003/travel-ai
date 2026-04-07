@@ -56,7 +56,12 @@ export default async function AdminDestinationEditPage({ params }: Props) {
           entry_fee: a.entry_fee ?? 0,
           destination_id: a.destination_id ?? null,
         }))}
-        destImages={destImages ?? []}
+        destImages={(destImages ?? []).map((img) => ({
+          id: img.id,
+          image_url: img.image_url ?? '',
+          caption: img.caption ?? '',
+          sort_order: img.sort_order ?? undefined,
+        }))}
         allTags={tags ?? []}
         selectedTagIds={(destTags ?? []).map((t: { tag_id: string }) => t.tag_id)}
       />

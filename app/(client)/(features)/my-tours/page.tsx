@@ -19,11 +19,12 @@ export default async function MyToursPage() {
     .select(`
       id, status, payment_status, num_people, travel_date,
       total_price, payment_method, note, created_at, booking_type,
+      item_name, item_price_snapshot,
       tours (
-        id, name, slug, cover_image, duration_days, price
+        id, slug, cover_image, duration_days
       ),
       hotels (
-        id, name, slug, cover_image, star_rating, min_price
+        id, slug, cover_image, star_rating
       ),
       reviews (
         id, rating, comment, created_at

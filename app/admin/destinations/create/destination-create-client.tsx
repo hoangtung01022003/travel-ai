@@ -30,7 +30,7 @@ type SectionKey = typeof SECTIONS[number]['key']
 /** Điểm tham quan mới (tạo inline) */
 interface NewAttraction { name: string; description: string; image_url: string; entry_fee: number }
 /** Điểm tham quan đã có trong DB */
-interface ExistingAttraction { id: string; name: string; description: string; image_url: string; entry_fee: number; destination_id: string | null }
+interface ExistingAttraction { id: string; name: string; description: string | null; image_url: string | null; entry_fee: number | null; destination_id: string | null }
 interface DestImage { image_url: string; caption: string }
 interface Tag { id: string; name: string; slug: string }
 
@@ -326,7 +326,7 @@ export default function DestinationCreateClient({ allTags, existingAttractions }
                           <p className="text-sm font-medium">{attr.name}</p>
                           {attr.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{attr.description}</p>}
                           <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                            {attr.entry_fee > 0 && <span>Vé: {attr.entry_fee.toLocaleString('vi-VN')}đ</span>}
+                            {(attr.entry_fee ?? 0) > 0 && <span>Vé: {attr.entry_fee!.toLocaleString('vi-VN')}đ</span>}
                             {attr.destination_id && <span className="text-amber-600">• Đã gắn điểm đến khác</span>}
                           </div>
                         </div>

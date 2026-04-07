@@ -13,7 +13,8 @@ export async function GET(request: Request) {
   const query: Record<string, string> = {}
   searchParams.forEach((value, key) => { query[key] = value })
 
-  const supabase   = createAdminClient()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const supabase   = createAdminClient() as any
   const baseUrl    = process.env.BASE_URL!
   const now        = new Date().toISOString()
 
@@ -29,7 +30,7 @@ export async function GET(request: Request) {
     response_code:  result.responseCode,
     is_valid_sig:   result.isValid,
     created_at:     now,
-  }).then(({ error }) => {
+  }).then(({ error }: { error: { message: string } | null }) => {
     if (error) console.warn('[vnpay-callback] log error:', error.message)
   })
 

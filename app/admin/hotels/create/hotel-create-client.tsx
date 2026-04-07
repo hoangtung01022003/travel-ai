@@ -29,7 +29,7 @@ interface RoomType {
   image_url: string; is_available: boolean
 }
 interface HotelImage { image_url: string; caption: string }
-interface Amenity { id: string; name: string; icon: string; category: string }
+interface Amenity { id: string; name: string; icon: string | null; category: string | null }
 interface Tag { id: string; name: string; slug: string }
 
 interface Props {

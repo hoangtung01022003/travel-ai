@@ -26,7 +26,9 @@ export const TourDetailPageClient = ({ tour }: TourDetailPageClientProps) => {
     (a, b) => (a.day_number as number) - (b.day_number as number)
   )
   const reviews = tour.reviews || []
-  const startDates: string[] = Array.isArray(tour.start_dates) ? (tour.start_dates as string[]) : []
+  const startDates: string[] = Array.isArray(tour.start_dates)
+    ? (tour.start_dates as unknown as string[])
+    : []
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">

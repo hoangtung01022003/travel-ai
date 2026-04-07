@@ -34,7 +34,8 @@ export async function POST(request: Request) {
 
     const supabase = createAdminClient()
 
-    const { data: booking, error: bookingErr } = await supabase
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: booking, error: bookingErr } = await (supabase as any)
       .from('bookings')
       .select('id, user_id, payment_status, total_price')
       .eq('id', booking_id)

@@ -26,17 +26,17 @@ type TabKey = typeof TABS[number]['key']
 interface RoomType {
   id?: string
   name: string
-  description: string
+  description: string | null
   price_per_night: number
-  max_guests: number
-  bed_type: string
-  room_size: number
-  image_url: string
-  is_available: boolean
+  max_guests: number | null
+  bed_type: string | null
+  room_size: number | null
+  image_url: string | null
+  is_available: boolean | null
 }
 
-interface HotelImage { id?: string; image_url: string; caption: string; sort_order?: number }
-interface Amenity { id: string; name: string; icon: string; category: string }
+interface HotelImage { id?: string; image_url: string; caption: string | null; sort_order?: number | null }
+interface Amenity { id: string; name: string; icon: string | null; category: string | null }
 interface Tag { id: string; name: string; slug: string }
 
 interface HotelEditClientProps {
@@ -273,7 +273,7 @@ export default function HotelEditClient({
                   <div className="grid grid-cols-3 gap-5">
                     <div className="col-span-1">
                       <Label className="text-xs mb-1 block">Ảnh phòng</Label>
-                      <ImageUpload value={room.image_url} onChange={url => updateRoom(idx, 'image_url', url)} folder="hotels" />
+                      <ImageUpload value={room.image_url ?? ''} onChange={url => updateRoom(idx, 'image_url', url)} folder="hotels" />
                     </div>
                     <div className="col-span-2 space-y-3">
                       <div className="grid grid-cols-2 gap-3">
@@ -289,25 +289,25 @@ export default function HotelEditClient({
                       <div className="grid grid-cols-3 gap-3">
                         <div className="space-y-1">
                           <Label className="text-xs">Số khách tối đa</Label>
-                          <Input type="number" min="1" value={room.max_guests} onChange={e => updateRoom(idx, 'max_guests', Number(e.target.value))} />
+                          <Input type="number" min="1" value={room.max_guests ?? 2} onChange={e => updateRoom(idx, 'max_guests', Number(e.target.value))} />
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs">Loại giường</Label>
-                          <select value={room.bed_type} onChange={e => updateRoom(idx, 'bed_type', e.target.value)} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
+                          <select value={room.bed_type ?? 'Double'} onChange={e => updateRoom(idx, 'bed_type', e.target.value)} className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                             {BED_TYPES.map(b => <option key={b} value={b}>{b}</option>)}
                           </select>
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs">Diện tích (m²)</Label>
-                          <Input type="number" min="0" value={room.room_size} onChange={e => updateRoom(idx, 'room_size', Number(e.target.value))} />
+                          <Input type="number" min="0" value={room.room_size ?? 0} onChange={e => updateRoom(idx, 'room_size', Number(e.target.value))} />
                         </div>
                       </div>
                       <div className="space-y-1">
                         <Label className="text-xs">Mô tả phòng</Label>
-                        <Textarea rows={2} value={room.description} onChange={e => updateRoom(idx, 'description', e.target.value)} placeholder="Mô tả tóm tắt về phòng nghỉ..." />
+                        <Textarea rows={2} value={room.description ?? ''} onChange={e => updateRoom(idx, 'description', e.target.value)} placeholder="Mô tả tóm tắt về phòng nghỉ..." />
                       </div>
                       <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" checked={room.is_available} onChange={e => updateRoom(idx, 'is_available', e.target.checked)} className="accent-primary" />
+                        <input type="checkbox" checked={room.is_available ?? true} onChange={e => updateRoom(idx, 'is_available', e.target.checked)} className="accent-primary" />
                         <span className="text-sm">Còn phòng trống</span>
                       </label>
                     </div>
@@ -342,7 +342,7 @@ export default function HotelEditClient({
                   <div className="flex-1 space-y-2">
                     <div className="space-y-1">
                       <Label className="text-xs">Caption</Label>
-                      <Input value={img.caption} onChange={e => setImages(p => { const a = [...p]; a[idx] = { ...a[idx], caption: e.target.value }; return a })} placeholder="Mô tả ảnh..." />
+                      <Input value={img.caption ?? ''} onChange={e => setImages(p => { const a = [...p]; a[idx] = { ...a[idx], caption: e.target.value }; return a })} placeholder="Mô tả ảnh..." />
                     </div>
                     <Button type="button" variant="ghost" size="sm" onClick={() => setImages(p => p.filter((_, i) => i !== idx))} className="text-destructive hover:bg-destructive/10 h-7 px-2 text-xs">
                       <Trash2 className="h-3 w-3 mr-1" />Xóa

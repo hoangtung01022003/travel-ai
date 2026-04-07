@@ -29,8 +29,12 @@ interface Booking {
   created_at: string
   updated_at: string
   booking_type: 'tour' | 'hotel'
-  tours:    { id: string; name: string; slug: string } | null
-  hotels:   { id: string; name: string; slug: string } | null
+  // ── Snapshot tại thời điểm đặt ─────────────────────────────
+  item_name: string | null
+  item_price_snapshot: number | null
+  // ── Relations (chỉ dùng cho navigation link) ─────────────
+  tours:    { id: string; slug: string } | null
+  hotels:   { id: string; slug: string } | null
   profiles: { full_name: string | null; email: string | null; phone: string | null } | null
 }
 
@@ -61,8 +65,9 @@ const PAGE_SIZE = 20
 
 function BookingDetailDialog({ booking, onClose }: { booking: Booking; onClose: () => void }) {
   const isHotel = booking.booking_type === 'hotel'
-  const item    = isHotel ? booking.hotels : booking.tours
   const user    = booking.profiles
+  // Dùng snapshot tên — không bị ảnh hưởng khi admin update tour/hotel
+  const itemDisplayName = booking.item_name ?? (isHotel ? 'Khách sạn' : 'Tour')
   const status  = BOOKING_STATUS_CONFIG[booking.status]
   const payment = PAYMENT_CONFIG[booking.payment_status]
 
@@ -80,7 +85,7 @@ function BookingDetailDialog({ booking, onClose }: { booking: Booking; onClose: 
               {isHotel ? <Hotel className="h-4 w-4 text-accent" /> : <Route className="h-4 w-4 text-primary" />}
             </div>
             <div>
-              <p className="font-semibold">{item?.name ?? 'Không tìm thấy'}</p>
+              <p className="font-semibold">{itemDisplayName}</p>
               <p className="text-xs text-muted-foreground">
                 #{booking.id.slice(0, 8).toUpperCase()} · {isHotel ? 'Khách sạn' : 'Tour'}
               </p>
@@ -180,8 +185,8 @@ export default function BookingsClient({ bookings, totalRevenue }: BookingsClien
         b.profiles?.full_name,
         b.profiles?.email,
         b.profiles?.phone,
-        b.tours?.name,
-        b.hotels?.name,
+        // Dùng snapshot name — tìm kiếm vấn đúng dù tour/hotel đã bị đổi tên
+        b.item_name,
       ].some((v) => v?.toLowerCase().includes(query))
 
       const matchStatus = statusFilter === 'all' || b.status === statusFilter
@@ -329,9 +334,11 @@ export default function BookingsClient({ bookings, totalRevenue }: BookingsClien
                         </div>
                       </td>
 
-                      {/* Item name */}
+                      {/* Item name — dùng snapshot */}
                       <td className="px-4 py-3 max-w-[180px]">
-                        <p className="truncate font-medium text-xs">{item?.name ?? '—'}</p>
+                        <p className="truncate font-medium text-xs">
+                          {booking.item_name ?? '—'}
+                        </p>
                         <p className="text-xs text-muted-foreground">{isHotel ? 'Khách sạn' : 'Tour'}</p>
                       </td>
 

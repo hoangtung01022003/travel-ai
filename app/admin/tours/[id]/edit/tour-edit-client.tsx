@@ -21,9 +21,9 @@ type TabKey = typeof TABS[number]['key']
 interface Itinerary {
   id?: string
   day_number: number
-  title: string
-  description: string
-  sort_order?: number
+  title: string | null
+  description: string | null
+  sort_order?: number | null
 }
 
 interface TourEditClientProps {
@@ -232,7 +232,7 @@ export default function TourEditClient({ tour, destinations, itineraries: initia
                     <div className="space-y-1">
                       <Label className="text-xs">Tiêu đề ngày</Label>
                       <Input
-                        value={itin.title}
+                        value={itin.title ?? ''}
                         onChange={e => updateDay(idx, 'title', e.target.value)}
                         placeholder={`VD: Ngày ${itin.day_number}: Khởi hành & Khám phá...`}
                       />
@@ -241,7 +241,7 @@ export default function TourEditClient({ tour, destinations, itineraries: initia
                       <Label className="text-xs">Hoạt động chi tiết</Label>
                       <Textarea
                         rows={4}
-                        value={itin.description}
+                        value={itin.description ?? ''}
                         onChange={e => updateDay(idx, 'description', e.target.value)}
                         placeholder="Mô tả các hoạt động trong ngày này..."
                       />

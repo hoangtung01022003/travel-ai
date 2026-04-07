@@ -7,6 +7,49 @@ import {
   generateItineraryInputSchema,
 } from '@/lib/schemas/ai-itinerary.schema'
 
+// ── Model fallback list ──────────────────────────────────────────────────────
+const GEMINI_MODELS = [
+  'gemini-2.5-flash',
+  'gemini-1.5-flash',
+  'gemini-1.5-pro',
+]
+
+// Retry across models when a 503 / overload error occurs
+async function callGeminiWithRetry(prompt: string): Promise<string> {
+  let lastError: unknown
+
+  for (const model of GEMINI_MODELS) {
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const result = await ai.models.generateContent({
+          model,
+          contents: prompt,
+          config: {
+            responseMimeType: 'application/json',
+            temperature: 0.7,
+            maxOutputTokens: 8000,
+          },
+        })
+        const text = result.text ?? ''
+        if (text) return text
+      } catch (err: unknown) {
+        lastError = err
+        const msg = err instanceof Error ? err.message : String(err)
+        const isOverload = msg.includes('503') || msg.includes('UNAVAILABLE') || msg.includes('overloaded')
+
+        if (!isOverload) throw err          // non-503 error → rethrow immediately
+        if (attempt === 1) {
+          // Brief pause before retry on same model
+          await new Promise(r => setTimeout(r, 1500))
+        }
+        // else fall through to next model
+      }
+    }
+  }
+
+  throw lastError ?? new Error('Tất cả model AI hiện đang quá tải. Vui lòng thử lại sau vài phút.')
+}
+
 // ── POST /api/ai/generate-itinerary ──────────────────────────────────────────
 
 export async function POST(request: Request) {
@@ -145,19 +188,24 @@ Trả về JSON đúng format sau (tiếng Việt, chi phí VND):
 }
 Mỗi ngày 5-8 hoạt động. CHỈ trả về JSON, không thêm text.`
 
-    // ─── 5. Call Gemini ──────────────────────────────────────────────────────
+    // ─── 5. Call Gemini (with model fallback for 503) ───────────────────────
 
-    const geminiResult = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: fullPrompt,
-      config: {
-        responseMimeType: 'application/json',
-        temperature: 0.7,
-        maxOutputTokens: 8000,
-      },
-    })
+    let rawText: string
+    try {
+      rawText = await callGeminiWithRetry(fullPrompt)
+    } catch (geminiErr: unknown) {
+      const msg = geminiErr instanceof Error ? geminiErr.message : String(geminiErr)
+      const isOverload = msg.includes('503') || msg.includes('UNAVAILABLE') || msg.includes('overloaded')
+      return NextResponse.json(
+        {
+          error: isOverload
+            ? 'Dịch vụ AI đang quá tải, vui lòng thử lại sau 1-2 phút.'
+            : `Lỗi AI: ${msg}`,
+        },
+        { status: isOverload ? 503 : 500 }
+      )
+    }
 
-    const rawText = geminiResult.text ?? ''
     if (!rawText) {
       return NextResponse.json(
         { error: 'AI không trả về kết quả. Vui lòng thử lại.' },
@@ -206,32 +254,21 @@ Mỗi ngày 5-8 hoạt động. CHỈ trả về JSON, không thêm text.`
       suggestedTours = fallbackTours ?? []
     }
 
-    // ─── 8. Persist (if logged in) ───────────────────────────────────────────
+    // ─── 8. Log prompt usage only (save is handled by saveItinerary action) ──
+    // Auto-save removed: user explicitly clicks "Lưu lịch trình" to persist.
 
     const userPrompt = `${days} ngày ${destData?.name ?? destination}, ${people} người, ${budget ? formatBudget(budget) : 'linh hoạt'}`
 
     if (userId) {
       try {
-        await Promise.all([
-          supabase.from('ai_itineraries').insert({
-            user_id: userId,
-            prompt: userPrompt,
-            result: itinerary as unknown as Record<string, unknown>,
-            title: itinerary.title ?? `${destData?.name ?? destination} — ${days} ngày`,
-            destination_name: destData?.name ?? destination,
-            duration_days: days,
-            budget: budget ?? null,
-            num_people: people,
-          }),
-          supabase.from('ai_prompt_logs').insert({
-            user_id: userId,
-            prompt: userPrompt,
-            model: 'gemini-1.5-flash',
-            tokens_used: null,
-          }),
-        ])
-      } catch (saveErr) {
-        console.warn('[AI Itinerary] Save failed:', saveErr)
+        await supabase.from('ai_prompt_logs').insert({
+          user_id: userId,
+          prompt: userPrompt,
+          model: 'gemini-auto-fallback',
+          tokens_used: null,
+        })
+      } catch (logErr) {
+        console.warn('[AI Itinerary] Log failed:', logErr)
       }
     }
 

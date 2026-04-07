@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   X, CalendarDays, Users, CreditCard, Loader2,
-  AlertCircle, Phone, Mail, User, MessageSquare,
+  AlertCircle, Phone, Mail, User, MessageSquare, ExternalLink,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -28,6 +28,9 @@ interface BookingModalProps {
 const fmtVND = (n: number) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(n)
 
+// ── Stable singleton client ────────────────────────────────────────────────────
+const supabase = createClient()
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function BookingModal({
@@ -44,102 +47,170 @@ export default function BookingModal({
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState('')
 
+  // paymentUrl state: when set, show a manual redirect button as fallback
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null)
+  const redirectAttempted = useRef(false)
+
   const totalPrice = pricePerUnit * people
 
+  // Reset on close
+  useEffect(() => {
+    if (!open) {
+      setError('')
+      setPaymentUrl(null)
+      redirectAttempted.current = false
+    }
+  }, [open])
+
   // Pre-fill from profile on open
-  const prefillFromProfile = async () => {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: profile } = await (supabase as any)
-      .from('profiles')
-      .select('full_name, phone, email')
-      .eq('id', user.id)
-      .single()
-    if (profile) {
-      if (profile.full_name && !name) setName(profile.full_name)
-      if (profile.phone && !phone)    setPhone(profile.phone)
-      if (profile.email && !email)    setEmail(profile.email ?? user.email ?? '')
-    } else if (user.email && !email) {
-      setEmail(user.email)
+  useEffect(() => {
+    if (!open) return
+    async function prefill() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: profile } = await (supabase as any)
+        .from('profiles')
+        .select('full_name, phone, email')
+        .eq('id', user.id)
+        .single()
+      if (profile) {
+        if (profile.full_name && !name) setName(profile.full_name)
+        if (profile.phone && !phone)    setPhone(profile.phone)
+        if (profile.email && !email)    setEmail(profile.email ?? user.email ?? '')
+      } else if (user.email && !email) {
+        setEmail(user.email)
+      }
+    }
+    prefill()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
+  // ── Redirect helper with fallback ─────────────────────────────────────────────
+  const redirectToVNPay = (url: string) => {
+    setPaymentUrl(url)
+    redirectAttempted.current = true
+
+    // Try window.location.assign (works on all browsers for external URLs)
+    try {
+      window.location.assign(url)
+    } catch {
+      // If blocked (rare), fallback button will appear
+      console.warn('[Booking] window.location.assign blocked, showing fallback button')
     }
   }
 
-  // Prefill whenever modal opens — dùng useEffect, KHÔNG dùng useState
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { if (open) prefillFromProfile() }, [open])
-
+  // ── Main booking handler ───────────────────────────────────────────────────────
   const handleBook = async () => {
     setError('')
-    if (!date)  { setError('Vui lòng chọn ngày'); return }
+    setPaymentUrl(null)
+    if (!date)            { setError('Vui lòng chọn ngày'); return }
     if (!phone && !email) { setError('Vui lòng nhập số điện thoại hoặc email liên hệ'); return }
 
     setLoading(true)
+
     try {
-      const supabase = createClient()
+      // 1. Auth check
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
+      if (!user) {
+        setLoading(false)
+        router.push('/login')
+        return
+      }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabase as any
 
-      // ── Build insert payload theo type ──────────────────────────────────────
-      // bookings schema: tour_id nullable, hotel_id nullable, booking_type enum
+      // 2. Insert booking với snapshot fields
+      // item_name & item_price_snapshot = lịch sử — không thay đổi khi admin update tour/hotel
       const bookingPayload: Record<string, unknown> = {
-        user_id:        user.id,
-        booking_type:   type,                 // 'tour' | 'hotel'
-        num_people:     people,
-        travel_date:    date,
-        total_price:    totalPrice,
-        note:           [
-          name  ? `Tên: ${name}` : '',
-          phone ? `SĐT: ${phone}` : '',
-          email ? `Email: ${email}` : '',
+        user_id:             user.id,
+        booking_type:        type,
+        num_people:          people,
+        travel_date:         date,
+        total_price:         totalPrice,
+        // ── Snapshot tại thời điểm đặt ──────────────────────────────────────
+        item_name:           itemName,         // lưu tên tour/hotel
+        item_price_snapshot: pricePerUnit,     // lưu đơn giá
+        // ────────────────────────────────────────────────────────────────────
+        note: [
+          name  ? `Tên: ${name}`     : '',
+          phone ? `SĐT: ${phone}`    : '',
+          email ? `Email: ${email}`  : '',
           note  ? `Ghi chú: ${note}` : '',
         ].filter(Boolean).join(' | ') || null,
         payment_method: 'vnpay',
+        // payment_status: DB default = 'unpaid'
+        // status:         DB default = 'pending'
       }
 
-      // Gán đúng FK theo type — tránh FK constraint violation
-      if (type === 'tour') {
-        bookingPayload.tour_id  = itemId
-      } else {
-        bookingPayload.hotel_id = itemId
-      }
+      if (type === 'tour') bookingPayload.tour_id  = itemId
+      else                 bookingPayload.hotel_id = itemId
 
       const { data: booking, error: bookingErr } = await db
-        .from('bookings')
-        .insert(bookingPayload)
-        .select('id')
-        .single()
+        .from('bookings').insert(bookingPayload).select('id').single()
 
       if (bookingErr || !booking) {
-        setError(bookingErr?.message ?? 'Không thể tạo booking')
+        const code = bookingErr?.code ?? ''
+        const msg  = bookingErr?.message ?? 'Lỗi không xác định'
+        console.error('[Booking] insert error:', bookingErr)
+
+        // Map error codes → user-friendly messages
+        let friendlyMsg: string
+        if (code === '23503') {
+          // FK violation (tour/hotel đã bị xóa)
+          friendlyMsg = `${type === 'tour' ? 'Tour' : 'Khách sạn'} này không còn tồn tại. Vui lòng tải lại trang.`
+        } else if (code === '23514') {
+          // CHECK constraint
+          friendlyMsg = 'Thông tin đặt chỗ không hợp lệ. Vui lòng thử lại.'
+        } else if (code === '42501') {
+          // RLS denied
+          friendlyMsg = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
+        } else {
+          friendlyMsg = `Không thể tạo đặt chỗ: ${msg}`
+        }
+
+        setError(friendlyMsg)
+        setLoading(false)
         return
       }
 
+      // 3. Tạo VNPay payment URL
       const res = await fetch('/api/payment/create-payment-url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           booking_id: booking.id,
           amount:     totalPrice,
-          order_desc: `Dat ${type === 'tour' ? 'tour' : 'khach san'} ${itemName} - ${people} ${type === 'tour' ? 'nguoi' : 'dem'} - ${date}`,
+          order_desc: `Dat ${type === 'tour' ? 'tour' : 'khach san'} - ${people} ${type === 'tour' ? 'nguoi' : 'dem'} - ${date}`,
         }),
       })
 
-      const data = await res.json()
+      let data: { paymentUrl?: string; error?: string }
+      try   { data = await res.json() }
+      catch { data = { error: 'Server trả về response không hợp lệ' } }
+
       if (!res.ok || !data.paymentUrl) {
-        setError(data.error ?? 'Không thể tạo link thanh toán')
+        const errMap: Record<number, string> = {
+          401: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
+          403: 'Bạn không có quyền thực hiện thanh toán này.',
+          404: 'Không tìm thấy thông tin đặt chỗ.',
+          409: 'Đặt chỗ này đã được thanh toán.',
+          500: 'Lỗi máy chủ khi tạo link thanh toán. Vui lòng thử lại.',
+        }
+        setError(errMap[res.status] ?? data.error ?? `Lỗi tạo link thanh toán (HTTP ${res.status})`)
+        setLoading(false)
         return
       }
-      window.location.href = data.paymentUrl
 
-    } catch (err) {
-      setError('Lỗi kết nối. Vui lòng thử lại.')
-      console.error('[BookingModal]', err)
-    } finally {
+      // 4. Redirect to VNPay
+      // loading stays true — browser is navigating away
+      redirectToVNPay(data.paymentUrl)
+
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error('[Booking] unexpected error:', err)
+      setError(`Lỗi kết nối. Vui lòng kiểm tra mạng và thử lại. (${msg})`)
       setLoading(false)
     }
   }
@@ -312,16 +383,32 @@ export default function BookingModal({
 
                 {/* Error */}
                 {error && (
-                  <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                    <AlertCircle className="h-4 w-4 shrink-0" />
-                    {error}
+                  <div className="flex items-start gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                    <span>{error}</span>
                   </div>
+                )}
+
+                {/* Fallback redirect button (shown if window.location.assign was blocked) */}
+                {paymentUrl && (
+                  <a
+                    href={paymentUrl}
+                    target="_self"
+                    className="flex items-center justify-center gap-2 w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Nhấn đây để tiếp tục thanh toán VNPay
+                  </a>
                 )}
               </div>
 
               {/* Footer */}
               <div className="border-t border-border px-6 py-4">
-                <Button className="w-full gap-2" size="lg" onClick={handleBook} disabled={loading}>
+                <Button
+                  className="w-full gap-2" size="lg"
+                  onClick={handleBook}
+                  disabled={loading || !!paymentUrl}
+                >
                   {loading
                     ? <><Loader2 className="h-4 w-4 animate-spin" /> Đang xử lý...</>
                     : <><CreditCard className="h-4 w-4" /> Xác nhận &amp; Thanh toán VNPay</>

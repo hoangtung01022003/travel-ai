@@ -223,9 +223,9 @@ export default async function AdminDashboardPage() {
                         </span>
                         <span className="text-xs text-muted-foreground">{timeAgo(report.created_at as string)}</span>
                       </div>
-                      {report.reason && (
+                      {!!report.reason && (
                         <p className="mb-2 text-xs text-muted-foreground">
-                          <span className="font-medium text-foreground">Lý do:</span> {report.reason as string}
+                          <span className="font-medium text-foreground">Lý do:</span> {String(report.reason)}
                         </p>
                       )}
                       {review && (

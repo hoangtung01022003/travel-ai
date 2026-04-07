@@ -17,20 +17,16 @@ import ReviewForm from '@/components/review/review-form'
 
 interface TourSnap {
   id: string
-  name: string
   slug: string
   cover_image: string | null
   duration_days: number
-  price: number
 }
 
 interface HotelSnap {
   id: string
-  name: string
   slug: string
   cover_image: string | null
   star_rating: number | null
-  min_price: number
 }
 
 interface ExistingReview {
@@ -51,6 +47,10 @@ interface Booking {
   note: string | null
   created_at: string
   booking_type: 'tour' | 'hotel'
+  // ── Snapshot tại thời điểm đặt — không thay đổi theo tour/hotel ──
+  item_name: string | null
+  item_price_snapshot: number | null
+  // ── Relations (chỉ dùng cho nav link + ảnh) ──────────────────────
   tours: TourSnap | null
   hotels: HotelSnap | null
   reviews: ExistingReview[] | null
@@ -96,12 +96,14 @@ function BookingCard({ booking }: { booking: Booking }) {
   const hotel = booking.hotels
   const isHotel = booking.booking_type === 'hotel'
 
-  // Generic item info (works for either type)
-  const itemName      = isHotel ? hotel?.name  : tour?.name
+  // Generic item info — ưu tiên snapshot tại thời điểm đặt
+  // Fallback sang text placeholder nếu snapshot chưa tồn tại (booking cũ chưa migrate)
+  const itemName      = booking.item_name ?? (isHotel ? 'Khách sạn' : 'Tour')
   const itemSlug      = isHotel ? hotel?.slug  : tour?.slug
   const itemHref      = isHotel ? `/hotels/${itemSlug}` : `/tours/${itemSlug}`
   const coverImage    = isHotel ? hotel?.cover_image : tour?.cover_image
-  const unitPrice     = isHotel ? hotel?.min_price   : tour?.price
+  // Dùng snapshot giá — không JOIN lại tours/hotels
+  const unitPrice     = booking.item_price_snapshot ?? null
   const typeIcon      = isHotel ? '🏨' : '🗺️'
   const unitLabel     = isHotel ? '/đêm' : '/người'
   const countLabel    = isHotel

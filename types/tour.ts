@@ -9,4 +9,6 @@ export type TourDetail = Tour & {
     'id' | 'day_number' | 'title' | 'description' | 'sort_order'
   >[]
   reviews: Review[]
+  /** Departure dates (DATE[]) added via migration — not yet in generated DB types */
+  start_dates?: string[] | null
 }

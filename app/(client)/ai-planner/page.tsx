@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import AiPlannerPageClient from '@/components/ai-planner/ai-planner-page-client'
 import type { Metadata } from 'next'
+import Loading from './loading'
 
 export const metadata: Metadata = {
   title: 'AI Lịch Trình — VietTravel',
@@ -17,7 +18,6 @@ async function AiPlannerContent() {
     .select('id, name, slug, province, destination_type')
     .order('name')
 
-  // Lấy số lượng plan hiện tại của user (để hiện quota)
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -42,7 +42,8 @@ async function AiPlannerContent() {
 
 export default function AiPlannerPage() {
   return (
-    <Suspense fallback={null}>
+    // Dùng Loading component từ loading.tsx làm fallback để skeleton hiển thị đúng
+    <Suspense fallback={<Loading />}>
       <AiPlannerContent />
     </Suspense>
   )

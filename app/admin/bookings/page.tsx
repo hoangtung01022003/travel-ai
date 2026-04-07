@@ -17,8 +17,9 @@ export default async function AdminBookingsPage() {
         id, status, payment_status, num_people, travel_date,
         total_price, payment_method, payment_ref, note,
         created_at, updated_at, booking_type,
-        tours  ( id, name, slug ),
-        hotels ( id, name, slug ),
+        item_name, item_price_snapshot,
+        tours  ( id, slug ),
+        hotels ( id, slug ),
         profiles!bookings_user_id_fkey ( full_name, email, phone )
       `)
       .order('created_at', { ascending: false })

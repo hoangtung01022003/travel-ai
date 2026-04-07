@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import {
   MapPin,
@@ -34,8 +34,11 @@ export default function Header() {
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [user, setUser] = useState<Profile | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
   const [scrolled, setScrolled] = useState(false)
-  const supabase = createClient()
+
+  // useMemo: tạo client 1 lần duy nhất, tránh useEffect re-run mỗi render
+  const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20)
@@ -44,37 +47,77 @@ export default function Header() {
   }, [])
 
   useEffect(() => {
-    async function getUser() {
-      const {
-        data: { user: authUser },
-      } = await supabase.auth.getUser()
-      if (authUser) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', authUser.id)
-          .single()
-        if (data) setUser(data)
-      }
-    }
-    getUser()
+    let cancelled = false
 
+    // Timeout an toàn: nếu sau 8s vẫn chưa resolve thì tắt loading
+    const timeout = setTimeout(() => {
+      if (!cancelled) setAuthLoading(false)
+    }, 8000)
+
+    // Dùng onAuthStateChange làm nguồn sự thật DUY NHẤT
+    // INITIAL_SESSION sẽ luôn fire ngay khi mount với trạng thái session thực tế
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single()
-        if (data) setUser(data)
+      if (cancelled) return
+
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        // Đăng nhập hoặc token được refresh → fetch profile
+        if (session?.user) {
+          const { data } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single()
+          if (!cancelled && data) setUser(data)
+        }
+        if (!cancelled) setAuthLoading(false)
+      } else if (event === 'INITIAL_SESSION') {
+        // INITIAL_SESSION: trạng thái auth ban đầu khi app mount
+        if (session?.user) {
+          // Có session → fetch profile
+          const { data } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single()
+          if (!cancelled && data) setUser(data)
+          if (!cancelled) setAuthLoading(false)
+        } else {
+          // Không có session → xác nhận chưa đăng nhập bằng getUser() (secure check)
+          // getUser() gọi đến Supabase server để xác minh, không dùng cache local
+          const {
+            data: { user: authUser },
+          } = await supabase.auth.getUser()
+          if (!cancelled) {
+            if (authUser) {
+              // getUser() trả về user → token hợp lệ dù session chưa được parse
+              const { data } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', authUser.id)
+                .single()
+              if (data) setUser(data)
+            } else {
+              // Thực sự chưa đăng nhập
+              setUser(null)
+            }
+            setAuthLoading(false)
+          }
+        }
       } else if (event === 'SIGNED_OUT') {
-        setUser(null)
+        if (!cancelled) {
+          setUser(null)
+          setAuthLoading(false)
+        }
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      cancelled = true
+      clearTimeout(timeout)
+      subscription.unsubscribe()
+    }
   }, [supabase])
 
   const handleSignOut = async () => {
@@ -86,11 +129,10 @@ export default function Header() {
 
   return (
     <header
-      className={`fixed top-0 right-0 left-0 z-50 transition-all duration-300 ${
-        scrolled
+      className={`fixed top-0 right-0 left-0 z-50 transition-all duration-300 ${scrolled
           ? 'border-border border-b bg-white/95 shadow-sm backdrop-blur-md'
           : 'bg-transparent'
-      }`}
+        }`}
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between lg:h-20">
@@ -111,11 +153,10 @@ export default function Header() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`relative rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                    isActive
+                  className={`relative rounded-lg px-4 py-2 text-sm font-medium transition-colors ${isActive
                       ? 'text-primary'
                       : 'text-foreground/70 hover:text-foreground hover:bg-muted'
-                  }`}
+                    }`}
                 >
                   {item.label}
                   {isActive && (
@@ -131,7 +172,11 @@ export default function Header() {
 
           {/* Actions */}
           <div className="flex items-center gap-3">
-            {user ? (
+            {/* Auth area — skeleton while loading, then user or login buttons */}
+            {authLoading ? (
+              // Skeleton placeholder prevents flash of login buttons
+              <div className="h-9 w-24 animate-pulse rounded-full bg-muted" />
+            ) : user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex cursor-pointer items-center gap-2 transition-opacity hover:opacity-80">
@@ -227,11 +272,10 @@ export default function Header() {
                     key={item.href}
                     href={item.href}
                     onClick={() => setMobileOpen(false)}
-                    className={`rounded-lg px-4 py-3 text-sm font-medium transition-colors ${
-                      isActive
+                    className={`rounded-lg px-4 py-3 text-sm font-medium transition-colors ${isActive
                         ? 'bg-primary/10 text-primary'
                         : 'text-foreground/70 hover:bg-muted'
-                    }`}
+                      }`}
                   >
                     {item.label}
                   </Link>
