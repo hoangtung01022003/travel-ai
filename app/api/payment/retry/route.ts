@@ -14,7 +14,9 @@ import { createPaymentUrl } from '@/lib/payment/vnpay'
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const bookingId = searchParams.get('id')
-  const baseUrl = process.env.BASE_URL ?? 'http://localhost:3000'
+  const host = request.headers.get('x-forwarded-host') || request.headers.get('host')
+  const protocol = request.headers.get('x-forwarded-proto') || (host?.includes('localhost') ? 'http' : 'https')
+  const baseUrl = host ? `${protocol}://${host}` : new URL(request.url).origin
 
   // ─── 1. Validate params ───────────────────────────────────────────────────
 
@@ -100,6 +102,7 @@ export async function GET(request: Request) {
     amount:    Number(booking.total_price),
     orderDesc: `Thanh toan lai - ${itemName} - ${booking.id.slice(0, 8)}`,
     clientIp,
+    baseUrl
   })
 
   return NextResponse.redirect(paymentUrl)

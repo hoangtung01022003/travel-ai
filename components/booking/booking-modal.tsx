@@ -38,14 +38,14 @@ export default function BookingModal({
 }: BookingModalProps) {
   const router = useRouter()
 
-  const [people,  setPeople]  = useState(2)
-  const [date,    setDate]    = useState(startDates[0] ?? '')
-  const [note,    setNote]    = useState('')
-  const [phone,   setPhone]   = useState('')
-  const [email,   setEmail]   = useState('')
-  const [name,    setName]    = useState('')
+  const [people, setPeople] = useState(2)
+  const [date, setDate] = useState(startDates[0] ?? '')
+  const [note, setNote] = useState('')
+  const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
+  const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error,   setError]   = useState('')
+  const [error, setError] = useState('')
 
   // paymentUrl state: when set, show a manual redirect button as fallback
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null)
@@ -76,14 +76,14 @@ export default function BookingModal({
         .single()
       if (profile) {
         if (profile.full_name && !name) setName(profile.full_name)
-        if (profile.phone && !phone)    setPhone(profile.phone)
-        if (profile.email && !email)    setEmail(profile.email ?? user.email ?? '')
+        if (profile.phone && !phone) setPhone(profile.phone)
+        if (profile.email && !email) setEmail(profile.email ?? user.email ?? '')
       } else if (user.email && !email) {
         setEmail(user.email)
       }
     }
     prefill()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
   // ── Redirect helper with fallback ─────────────────────────────────────────────
@@ -104,14 +104,15 @@ export default function BookingModal({
   const handleBook = async () => {
     setError('')
     setPaymentUrl(null)
-    if (!date)            { setError('Vui lòng chọn ngày'); return }
+    if (!date) { setError('Vui lòng chọn ngày'); return }
     if (!phone && !email) { setError('Vui lòng nhập số điện thoại hoặc email liên hệ'); return }
 
     setLoading(true)
 
     try {
       // 1. Auth check
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
       if (!user) {
         setLoading(false)
         router.push('/login')
@@ -124,35 +125,35 @@ export default function BookingModal({
       // 2. Insert booking với snapshot fields
       // item_name & item_price_snapshot = lịch sử — không thay đổi khi admin update tour/hotel
       const bookingPayload: Record<string, unknown> = {
-        user_id:             user.id,
-        booking_type:        type,
-        num_people:          people,
-        travel_date:         date,
-        total_price:         totalPrice,
+        user_id: user.id,
+        booking_type: type,
+        num_people: people,
+        travel_date: date,
+        total_price: totalPrice,
         // ── Snapshot tại thời điểm đặt ──────────────────────────────────────
-        item_name:           itemName,         // lưu tên tour/hotel
+        item_name: itemName,         // lưu tên tour/hotel
         item_price_snapshot: pricePerUnit,     // lưu đơn giá
         // ────────────────────────────────────────────────────────────────────
         note: [
-          name  ? `Tên: ${name}`     : '',
-          phone ? `SĐT: ${phone}`    : '',
-          email ? `Email: ${email}`  : '',
-          note  ? `Ghi chú: ${note}` : '',
+          name ? `Tên: ${name}` : '',
+          phone ? `SĐT: ${phone}` : '',
+          email ? `Email: ${email}` : '',
+          note ? `Ghi chú: ${note}` : '',
         ].filter(Boolean).join(' | ') || null,
         payment_method: 'vnpay',
         // payment_status: DB default = 'unpaid'
         // status:         DB default = 'pending'
       }
 
-      if (type === 'tour') bookingPayload.tour_id  = itemId
-      else                 bookingPayload.hotel_id = itemId
+      if (type === 'tour') bookingPayload.tour_id = itemId
+      else bookingPayload.hotel_id = itemId
 
       const { data: booking, error: bookingErr } = await db
         .from('bookings').insert(bookingPayload).select('id').single()
 
       if (bookingErr || !booking) {
         const code = bookingErr?.code ?? ''
-        const msg  = bookingErr?.message ?? 'Lỗi không xác định'
+        const msg = bookingErr?.message ?? 'Lỗi không xác định'
         console.error('[Booking] insert error:', bookingErr)
 
         // Map error codes → user-friendly messages
@@ -181,13 +182,13 @@ export default function BookingModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           booking_id: booking.id,
-          amount:     totalPrice,
+          amount: totalPrice,
           order_desc: `Dat ${type === 'tour' ? 'tour' : 'khach san'} - ${people} ${type === 'tour' ? 'nguoi' : 'dem'} - ${date}`,
         }),
       })
 
       let data: { paymentUrl?: string; error?: string }
-      try   { data = await res.json() }
+      try { data = await res.json() }
       catch { data = { error: 'Server trả về response không hợp lệ' } }
 
       if (!res.ok || !data.paymentUrl) {

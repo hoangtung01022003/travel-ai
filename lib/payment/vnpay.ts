@@ -8,6 +8,7 @@ export interface CreatePaymentUrlParams {
   orderDesc: string
   clientIp: string
   locale?: 'vn' | 'en'
+  baseUrl?: string
 }
 
 export interface VNPayCallbackResult {
@@ -48,7 +49,7 @@ export function createPaymentUrl(params: CreatePaymentUrlParams): string {
   const tmnCode   = process.env.VNPAY_TMN_CODE!
   const secretKey = process.env.VNPAY_HASH_SECRET!
   const vnpayUrl  = process.env.VNPAY_URL!
-  const baseUrl   = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+  const baseUrl   = params.baseUrl || process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
   const returnUrl = `${baseUrl}/api/payment/vnpay-callback`
 

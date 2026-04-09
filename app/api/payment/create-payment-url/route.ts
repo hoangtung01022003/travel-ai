@@ -53,10 +53,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Booking đã được thanh toán' }, { status: 409 })
     }
 
-    // ─── 4. Get client IP ─────────────────────────────────────────────────────
+    // ─── 4. Get client IP and Base URL ────────────────────────────────────────
 
     const forwarded = request.headers.get('x-forwarded-for')
     const clientIp  = forwarded?.split(',')[0]?.trim() ?? '127.0.0.1'
+
+    const host = request.headers.get('x-forwarded-host') || request.headers.get('host')
+    const protocol = request.headers.get('x-forwarded-proto') || (host?.includes('localhost') ? 'http' : 'https')
+    const baseUrl = host ? `${protocol}://${host}` : new URL(request.url).origin
 
     // ─── 5. Create payment URL ────────────────────────────────────────────────
 
@@ -65,6 +69,7 @@ export async function POST(request: Request) {
       amount:     amount,
       orderDesc:  order_desc || `Thanh toan tour - ${booking_id.slice(0, 8)}`,
       clientIp,
+      baseUrl
     })
 
     return NextResponse.json({ paymentUrl })

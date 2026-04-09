@@ -15,7 +15,10 @@ export async function GET(request: Request) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const supabase   = createAdminClient() as any
-  const baseUrl    = process.env.BASE_URL!
+  const host = request.headers.get('x-forwarded-host') || request.headers.get('host')
+  const protocol = request.headers.get('x-forwarded-proto') || (host?.includes('localhost') ? 'http' : 'https')
+  const baseUrl = host ? `${protocol}://${host}` : new URL(request.url).origin
+
   const now        = new Date().toISOString()
 
   // ─── 1. Verify signature ──────────────────────────────────────────────────
