@@ -35,12 +35,16 @@ export async function updateSession(request: NextRequest) {
           supabaseResponse = NextResponse.next({
             request,
           })
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value, options }) => {
+            // Chỉ ép Secure: true nếu đang thực sự ở môi trường PRODUCTION hoặc là https CHUẨN (không phải localhost)
+            // Localhost dùng Http nên nếu ép Secure: true thì trình duyệt sẽ reject cookie.
+            const isLocalhost = request.nextUrl.hostname === 'localhost'
             supabaseResponse.cookies.set(name, value, {
               ...options,
-              secure: isHttps || process.env.NODE_ENV === 'production' ? true : options.secure,
+              secure: isHttps && !isLocalhost ? true : options.secure,
+              sameSite: 'lax', // Đảm bảo ổn định khi redirect từ VNPay về
             })
-          )
+          })
         },
       },
     }
@@ -52,9 +56,12 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname
 
+  // Bỏ qua tất cả các route API để cho phép webhook VNPay và các gọi nội bộ chạy bình thường
+  const isApiPage = pathname.startsWith('/api')
+
   const isAuthPage = AUTH_PATHS.some((path) => pathname.startsWith(path))
 
-  const isPublicPage = PUBLIC_PATHS.some((path) =>
+  const isPublicPage = isApiPage || PUBLIC_PATHS.some((path) =>
     path === '/' ? pathname === path : pathname.startsWith(path)
   )
 

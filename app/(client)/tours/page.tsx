@@ -1,6 +1,7 @@
 import { getTours } from '@/components/tour/actions/tour-actions'
 import { notFound } from 'next/navigation'
 import { TourPageClient } from '@/components/tour/tour-page-client'
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -39,5 +40,9 @@ export default async function TourPage({ searchParams }: PageProps) {
     notFound()
   }
 
-  return <TourPageClient tours={results.success ? results.data.tours : []} totalCount={results.success ? results.data.count : 0} />
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-muted-foreground">Đang tải dữ liệu...</div>}>
+      <TourPageClient tours={results.success ? results.data.tours : []} totalCount={results.success ? results.data.count : 0} />
+    </Suspense>
+  )
 }

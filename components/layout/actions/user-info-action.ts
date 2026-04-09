@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createServerAction } from '@/lib/utils/server-actions'
 import { UserRole } from '@/types/auth'
+import { Profile } from '@/types/user'
 
 export const getCurrentUser = createServerAction(async () => {
   const supabase = await createClient()
@@ -48,5 +49,25 @@ export const getCurrentUserWithRole = createServerAction(
       userId: user.id,
       role: data.role,
     }
+  }
+)
+
+export const getFullProfile = createServerAction(
+  async (): Promise<Profile | null> => {
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) return null
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single()
+
+    if (error) return null
+    return data
   }
 )

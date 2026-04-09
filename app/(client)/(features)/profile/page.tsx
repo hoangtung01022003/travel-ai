@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getFullProfile } from '@/components/layout/actions/user-info-action'
 import ProfileClient from '@/components/profile/profile-client'
 import type { Metadata } from 'next'
 
@@ -9,16 +9,12 @@ export const metadata: Metadata = {
 }
 
 export default async function ProfilePage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const result = await getFullProfile()
+  const profile = result.success ? result.data : null
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profile } = await (supabase as any)
-    .from('profiles')
-    .select('id, full_name, phone, email, avatar_url, role, status, created_at')
-    .eq('id', user.id)
-    .single()
+  if (!profile) {
+    redirect('/login')
+  }
 
-  return <ProfileClient profile={profile} userEmail={user.email ?? ''} />
+  return <ProfileClient profile={profile} userEmail={profile.email ?? ''} />
 }

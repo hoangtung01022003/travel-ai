@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { createClient } from '@/lib/supabase/client'
+import { getFullProfile } from '@/components/layout/actions/user-info-action'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -66,20 +67,16 @@ export default function BookingModal({
   useEffect(() => {
     if (!open) return
     async function prefill() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: profile } = await (supabase as any)
-        .from('profiles')
-        .select('full_name, phone, email')
-        .eq('id', user.id)
-        .single()
-      if (profile) {
-        if (profile.full_name && !name) setName(profile.full_name)
-        if (profile.phone && !phone) setPhone(profile.phone)
-        if (profile.email && !email) setEmail(profile.email ?? user.email ?? '')
-      } else if (user.email && !email) {
-        setEmail(user.email)
+      try {
+        const result = await getFullProfile()
+        if (result.success && result.data) {
+          const profile = result.data
+          if (profile.full_name && !name) setName(profile.full_name)
+          if (profile.phone && !phone) setPhone(profile.phone)
+          if (profile.email && !email) setEmail(profile.email)
+        }
+      } catch (err) {
+        console.error('[BookingModal] Failed to prefill profile:', err)
       }
     }
     prefill()
@@ -110,9 +107,9 @@ export default function BookingModal({
     setLoading(true)
 
     try {
-      // 1. Auth check
-      const { data: { session } } = await supabase.auth.getSession()
-      const user = session?.user
+      // 1. Auth check qua Server Action (chống treo lock client)
+      const userRes = await getFullProfile()
+      const user = userRes.success ? userRes.data : null
       if (!user) {
         setLoading(false)
         router.push('/login')

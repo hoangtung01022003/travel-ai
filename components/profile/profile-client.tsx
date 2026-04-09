@@ -12,19 +12,10 @@ import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import type { Profile } from '@/types/user'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-interface Profile {
-  id: string
-  full_name: string | null
-  phone: string | null
-  email: string | null
-  avatar_url: string | null
-  role: string
-  status: string
-  created_at: string
-}
 
 interface ProfileClientProps {
   profile: Profile | null
@@ -78,7 +69,12 @@ export default function ProfileClient({ profile, userEmail }: ProfileClientProps
       // ✅ Cập nhật local state ngay lập tức — không cần reload
       setLocalProfile((prev) =>
         prev
-          ? { ...prev, full_name: fullName.trim() || null, phone: phone.trim() || null }
+          ? { 
+              ...prev, 
+              full_name: fullName.trim() || null, 
+              phone: phone.trim() || null,
+              updated_at: new Date().toISOString()
+            } as Profile
           : prev
       )
       setEditing(false)

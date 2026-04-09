@@ -1,5 +1,6 @@
 import { getHotels } from '@/components/hotel/actions/hotel-actions'
 import { HotelPageClient } from '@/components/hotel/hotel-page-client'
+import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
@@ -41,5 +42,9 @@ export default async function HotelsPage({ searchParams }: PageProps) {
     notFound()
   }
 
-  return <HotelPageClient hotels={results.success ? results.data.hotels : []} totalCount={results.success ? results.data.count : 0} />
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-muted-foreground">Đang tải dữ liệu...</div>}>
+      <HotelPageClient hotels={results.success ? results.data.hotels : []} totalCount={results.success ? results.data.count : 0} />
+    </Suspense>
+  )
 }

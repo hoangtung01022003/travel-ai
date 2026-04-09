@@ -1,5 +1,6 @@
 import { getDestinations } from '@/components/destination/actions/destination-actions'
 import { DestinationPageClient } from '@/components/destination/destination-page-client'
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -37,9 +38,11 @@ export default async function DestinationsPage({ searchParams }: PageProps) {
   })
 
   return (
-    <DestinationPageClient
-      destinations={results.success ? results.data.destinations : []}
-      totalCount={results.success ? results.data.count : 0}
-    />
+    <Suspense fallback={<div className="p-8 text-center text-muted-foreground">Đang tải dữ liệu...</div>}>
+      <DestinationPageClient
+        destinations={results.success ? results.data.destinations : []}
+        totalCount={results.success ? results.data.count : 0}
+      />
+    </Suspense>
   )
 }

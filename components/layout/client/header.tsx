@@ -29,12 +29,12 @@ import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils/common'
 import type { Profile } from '@/types/user'
 
-export default function Header() {
+export default function Header({ serverProfile = null }: { serverProfile?: Profile | null }) {
   const pathname = usePathname()
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [user, setUser] = useState<Profile | null>(null)
-  const [authLoading, setAuthLoading] = useState(true)
+  const [user, setUser] = useState<Profile | null>(serverProfile)
+  const [authLoading, setAuthLoading] = useState(!serverProfile)
   const [scrolled, setScrolled] = useState(false)
 
   // useMemo: tạo client 1 lần duy nhất, tránh useEffect re-run mỗi render
