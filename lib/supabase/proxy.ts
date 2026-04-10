@@ -42,7 +42,7 @@ export async function updateSession(request: NextRequest) {
             supabaseResponse.cookies.set(name, value, {
               ...options,
               secure: isHttps && !isLocalhost ? true : options.secure,
-              sameSite: 'lax', // Đảm bảo ổn định khi redirect từ VNPay về
+              // sameSite: 'lax', // Đảm bảo ổn định khi redirect từ VNPay về
             })
           })
         },
