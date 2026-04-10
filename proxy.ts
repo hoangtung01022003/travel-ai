@@ -9,14 +9,13 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-    /*
-     * Match all request paths except:
+     * Match all request paths except for the ones starting with:
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - api (api routes)
      * - images - .svg, .png, .jpg, .jpeg, .gif, .webp
-     * - api routes (allow external callbacks like VNPay)
      */
-    '/((?!_next/static|_next/image|favicon.ico|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|css|js|woff2?|ttf|otf|mp4|webm)$).*)',
   ],
 }

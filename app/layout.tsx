@@ -25,11 +25,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased flex min-h-full flex-col`}
       >
-        <div className="flex min-h-full flex-col">{children}</div>
+        {children}
         <Toaster richColors={false} position="top-right" expand />
       </body>
     </html>

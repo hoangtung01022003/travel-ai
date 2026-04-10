@@ -1,9 +1,12 @@
 'use server'
 
+import { z } from 'zod'
 import { createServerAction } from '@/lib/utils/server-actions'
 import { createClient } from '@/lib/supabase/server'
 import { createValidatedAction } from '@/lib/utils/create-validated-action'
 import { profileSchema } from '@/lib/schema/profile'
+
+import { revalidatePath } from 'next/cache'
 
 export const getMyProfile = createServerAction(async () => {
   const supabase = await createClient()
@@ -23,15 +26,17 @@ export const getMyProfile = createServerAction(async () => {
   return data
 })
 
-export const updateProfile = createValidatedAction<typeof profileSchema, void>(
-  profileSchema,
-  async (validatedData) => {
+export async function updateProfile(validatedData: z.infer<typeof profileSchema>): Promise<{ success: boolean; data?: any; error?: string }> {
+  try {
     const supabase = await createClient()
 
     const {
       data: { user },
     } = await supabase.auth.getUser()
-    if (!user) throw new Error('Chưa đăng nhập')
+    
+    if (!user) {
+      return { success: false, error: 'Chưa đăng nhập' }
+    }
 
     const { data, error } = await supabase
       .from('profiles')
@@ -40,10 +45,20 @@ export const updateProfile = createValidatedAction<typeof profileSchema, void>(
       .select()
       .single()
 
-    if (error) throw new Error(error.message)
-    return data
+    if (error) {
+      return { success: false, error: error.message }
+    }
+    
+    // Refresh toàn bộ các route liên quan đến Profile
+    revalidatePath('/profile')
+    revalidatePath('/', 'layout') 
+    
+    return { success: true, data }
+  } catch (err: any) {
+    console.error('[updateProfile Action Error]:', err)
+    return { success: false, error: err.message || 'Lỗi hệ thống' }
   }
-)
+}
 
 export const getMyItineraries = createServerAction(async () => {
   const supabase = await createClient()

@@ -151,6 +151,9 @@ export const createValidatedAction =
         throw err
       }
 
+      // Đảm bảo in lỗi ra Terminal để debug
+      console.error('[ValidatedAction Error]:', err)
+
       return {
         success: false,
         errors: {

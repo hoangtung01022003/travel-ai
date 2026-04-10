@@ -10,12 +10,11 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { createClient } from '@/lib/supabase/client'
+import { updateProfile } from '@/components/features/profile/actions/profile-actions'
 import { toast } from 'sonner'
 import type { Profile } from '@/types/user'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-
 
 interface ProfileClientProps {
   profile: Profile | null
@@ -50,37 +49,28 @@ export default function ProfileClient({ profile, userEmail }: ProfileClientProps
     setSaving(true)
     setError('')
     try {
-      const supabase = createClient()
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: err } = await (supabase as any)
-        .from('profiles')
-        .update({
-          full_name:  fullName.trim() || null,
-          phone:      phone.trim() || null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', localProfile?.id)
+      // ✅ CHIẾN THUẬT: Gọi Server Action thay vì gọi trực tiếp Browser Supabase
+      // Điều này triệt tiêu hoàn toàn Race Condition và Xung đột session giữa Client/Server
+      const result = await updateProfile({
+        email: displayEmail,
+        full_name: fullName.trim(),
+        phone: phone.trim(),
+      })
 
-      if (err) {
-        setError(err.message)
+      if (!result.success) {
+        setError(result.error || 'Cập nhật thất bại')
         return
       }
 
-      // ✅ Cập nhật local state ngay lập tức — không cần reload
-      setLocalProfile((prev) =>
-        prev
-          ? { 
-              ...prev, 
-              full_name: fullName.trim() || null, 
-              phone: phone.trim() || null,
-              updated_at: new Date().toISOString()
-            } as Profile
-          : prev
-      )
+      // ✅ Cập nhật local state ngay lập tức — mượt mà không cần reload trang
+      const updatedData = result.data as Profile
+      setLocalProfile(updatedData)
+      
       setEditing(false)
       toast.success('Cập nhật thông tin thành công!')
-    } catch {
-      setError('Lỗi kết nối. Vui lòng thử lại.')
+    } catch (err: any) {
+      console.error('Update profile error:', err)
+      setError(err.message || 'Lỗi kết nối. Vui lòng thử lại.')
     } finally {
       setSaving(false)
     }

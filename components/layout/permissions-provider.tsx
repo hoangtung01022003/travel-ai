@@ -104,30 +104,22 @@ export function PermissionsProvider({
 
     if (previousPathname === null) {
       previousPathnameRef.current = pathname
-
       return
     }
 
     if (previousPathname !== pathname) {
       previousPathnameRef.current = pathname
 
+      // CHỈ refresh tự động khi chuyển từ trang login sang trang khác (vừa đăng nhập xong)
       if (previousPathname === '/login' && pathname !== '/login') {
         const timeoutId = requestAnimationFrame(() => {
           void refreshRole(true)
         })
-
         return () => cancelAnimationFrame(timeoutId)
       }
 
-      const now = Date.now()
-      if (now - lastRefreshTimeRef.current > PATHNAME_CHANGE_DEBOUNCE_MS) {
-        lastRefreshTimeRef.current = now
-        const timeoutId = requestAnimationFrame(() => {
-          void refreshRole(false)
-        })
-
-        return () => cancelAnimationFrame(timeoutId)
-      }
+      // Xóa bỏ việc refresh trên mọi pathname change để tránh bão request khi pre-fetch
+      // Role sẽ được duy trì ổn định trừ khi có sự kiện logout/login chủ động.
     }
   }, [pathname, refreshRole])
 

@@ -29,8 +29,7 @@ interface BookingModalProps {
 const fmtVND = (n: number) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(n)
 
-// ── Stable singleton client ────────────────────────────────────────────────────
-const supabase = createClient()
+import { createBookingAction } from './actions/booking-actions'
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -48,7 +47,7 @@ export default function BookingModal({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // paymentUrl state: when set, show a manual redirect button as fallback
+  // paymentUrl state: khi có link thanh toán, nếu redirect tự động thất bại sẽ hiện nút bấm dự phòng
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null)
   const redirectAttempted = useRef(false)
 
@@ -63,7 +62,7 @@ export default function BookingModal({
     }
   }, [open])
 
-  // Pre-fill from profile on open
+  // Pre-fill từ profile khi mở modal
   useEffect(() => {
     if (!open) return
     async function prefill() {
@@ -83,132 +82,64 @@ export default function BookingModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
-  // ── Redirect helper with fallback ─────────────────────────────────────────────
+  // ── Redirect helper với fallback ─────────────────────────────────────────────
   const redirectToVNPay = (url: string) => {
     setPaymentUrl(url)
     redirectAttempted.current = true
 
-    // Try window.location.assign (works on all browsers for external URLs)
+    // Chuyển hướng ngay lập tức
     try {
       window.location.assign(url)
     } catch {
-      // If blocked (rare), fallback button will appear
       console.warn('[Booking] window.location.assign blocked, showing fallback button')
     }
   }
 
-  // ── Main booking handler ───────────────────────────────────────────────────────
+  // ── Main booking handler (CHUYỂN SANG DÙNG SERVER ACTION) ─────────────────────
   const handleBook = async () => {
     setError('')
     setPaymentUrl(null)
+    
     if (!date) { setError('Vui lòng chọn ngày'); return }
     if (!phone && !email) { setError('Vui lòng nhập số điện thoại hoặc email liên hệ'); return }
 
     setLoading(true)
 
     try {
-      // 1. Auth check qua Server Action (chống treo lock client)
-      const userRes = await getFullProfile()
-      const user = userRes.success ? userRes.data : null
-      if (!user) {
-        setLoading(false)
-        router.push('/login')
-        return
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const db = supabase as any
-
-      // 2. Insert booking với snapshot fields
-      // item_name & item_price_snapshot = lịch sử — không thay đổi khi admin update tour/hotel
-      const bookingPayload: Record<string, unknown> = {
-        user_id: user.id,
-        booking_type: type,
-        num_people: people,
-        travel_date: date,
-        total_price: totalPrice,
-        // ── Snapshot tại thời điểm đặt ──────────────────────────────────────
-        item_name: itemName,         // lưu tên tour/hotel
-        item_price_snapshot: pricePerUnit,     // lưu đơn giá
-        // ────────────────────────────────────────────────────────────────────
-        note: [
-          name ? `Tên: ${name}` : '',
-          phone ? `SĐT: ${phone}` : '',
-          email ? `Email: ${email}` : '',
-          note ? `Ghi chú: ${note}` : '',
-        ].filter(Boolean).join(' | ') || null,
-        payment_method: 'vnpay',
-        // payment_status: DB default = 'unpaid'
-        // status:         DB default = 'pending'
-      }
-
-      if (type === 'tour') bookingPayload.tour_id = itemId
-      else bookingPayload.hotel_id = itemId
-
-      const { data: booking, error: bookingErr } = await db
-        .from('bookings').insert(bookingPayload).select('id').single()
-
-      if (bookingErr || !booking) {
-        const code = bookingErr?.code ?? ''
-        const msg = bookingErr?.message ?? 'Lỗi không xác định'
-        console.error('[Booking] insert error:', bookingErr)
-
-        // Map error codes → user-friendly messages
-        let friendlyMsg: string
-        if (code === '23503') {
-          // FK violation (tour/hotel đã bị xóa)
-          friendlyMsg = `${type === 'tour' ? 'Tour' : 'Khách sạn'} này không còn tồn tại. Vui lòng tải lại trang.`
-        } else if (code === '23514') {
-          // CHECK constraint
-          friendlyMsg = 'Thông tin đặt chỗ không hợp lệ. Vui lòng thử lại.'
-        } else if (code === '42501') {
-          // RLS denied
-          friendlyMsg = 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
-        } else {
-          friendlyMsg = `Không thể tạo đặt chỗ: ${msg}`
+      // ✅ CHIẾN THUẬT: Gọi 1 Action duy nhất xử lý cả Insert và tạo Link Thanh toán
+      const result = await createBookingAction({
+        itemId,
+        itemName,
+        type,
+        people,
+        date,
+        pricePerUnit,
+        totalPrice,
+        contactInfo: {
+          name,
+          phone,
+          email,
+          note
         }
-
-        setError(friendlyMsg)
-        setLoading(false)
-        return
-      }
-
-      // 3. Tạo VNPay payment URL
-      const res = await fetch('/api/payment/create-payment-url', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          booking_id: booking.id,
-          amount: totalPrice,
-          order_desc: `Dat ${type === 'tour' ? 'tour' : 'khach san'} - ${people} ${type === 'tour' ? 'nguoi' : 'dem'} - ${date}`,
-        }),
       })
 
-      let data: { paymentUrl?: string; error?: string }
-      try { data = await res.json() }
-      catch { data = { error: 'Server trả về response không hợp lệ' } }
-
-      if (!res.ok || !data.paymentUrl) {
-        const errMap: Record<number, string> = {
-          401: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
-          403: 'Bạn không có quyền thực hiện thanh toán này.',
-          404: 'Không tìm thấy thông tin đặt chỗ.',
-          409: 'Đặt chỗ này đã được thanh toán.',
-          500: 'Lỗi máy chủ khi tạo link thanh toán. Vui lòng thử lại.',
-        }
-        setError(errMap[res.status] ?? data.error ?? `Lỗi tạo link thanh toán (HTTP ${res.status})`)
+      if (!result.success) {
+        setError(result.error || 'Đã có lỗi xảy ra khi tạo đặt chỗ.')
         setLoading(false)
         return
       }
 
-      // 4. Redirect to VNPay
-      // loading stays true — browser is navigating away
-      redirectToVNPay(data.paymentUrl)
+      // Nếu có link thanh toán từ server trả về, tiến hành chuyển hướng
+      if (result.paymentUrl) {
+        redirectToVNPay(result.paymentUrl)
+      } else {
+        setError('Không nhận được link thanh toán từ hệ thống.')
+        setLoading(false)
+      }
 
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err)
+    } catch (err: any) {
       console.error('[Booking] unexpected error:', err)
-      setError(`Lỗi kết nối. Vui lòng kiểm tra mạng và thử lại. (${msg})`)
+      setError(`Lỗi kết nối: ${err.message || 'Vui lòng thử lại sau.'}`)
       setLoading(false)
     }
   }

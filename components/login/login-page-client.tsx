@@ -32,9 +32,9 @@ export const LoginPageClient = () => {
       email: '',
       password: '',
     },
-    onSuccess: () => {
-      success('Register successfully')
-      router.replace('/')
+    onSuccess: (role) => {
+      success('Đăng nhập thành công')
+      router.replace(role === 'admin' ? '/admin' : '/')
     },
     onError: (errors) => {
       if (errors.root) {

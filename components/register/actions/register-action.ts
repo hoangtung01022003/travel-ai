@@ -15,6 +15,7 @@ export const registerAction = createValidatedAction<
     options: {
       data: {
         full_name: validatedData.full_name,
+        role: 'user',
       },
     },
   })

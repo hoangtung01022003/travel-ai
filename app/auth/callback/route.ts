@@ -37,8 +37,10 @@ export async function GET(request: NextRequest) {
       }
     )
 
-    const { error: exchangeError } =
-      await supabase.auth.exchangeCodeForSession(code)
+    const {
+      data: { user },
+      error: exchangeError,
+    } = await supabase.auth.exchangeCodeForSession(code)
 
     if (exchangeError) {
       if (
@@ -50,8 +52,45 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${appUrl}/login`)
     }
 
-    // Cookie đã được gắn vào redirectResponse → trả về
-    return redirectResponse
+    // Role-based default redirect
+    let nextPath = redirectTo || '/'
+
+    if (!redirectTo && user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+
+      const role = profile?.role || 'user'
+
+      // Sync role to user_metadata for middleware performance
+      await supabase.auth.updateUser({
+        data: { role }
+      })
+
+      if (role === 'admin') {
+        nextPath = '/admin'
+      }
+    }
+
+    // Update redirect URL in redirectResponse
+    const finalRedirectUrl = new URL(nextPath, appUrl).toString()
+    const finalResponse = NextResponse.redirect(finalRedirectUrl)
+
+    // Copy cookies from redirectResponse to finalResponse
+    redirectResponse.cookies.getAll().forEach((cookie) => {
+      finalResponse.cookies.set(cookie.name, cookie.value, {
+        path: cookie.path,
+        domain: cookie.domain,
+        secure: cookie.secure,
+        httpOnly: cookie.httpOnly,
+        sameSite: cookie.sameSite,
+        expires: cookie.expires,
+      })
+    })
+
+    return finalResponse
   }
 
   return NextResponse.redirect(redirectTo ? `${appUrl}${redirectTo}` : appUrl)

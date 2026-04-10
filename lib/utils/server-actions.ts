@@ -22,6 +22,9 @@ export const createServerAction = <T extends unknown[], R>(
         throw error
       }
 
+      // Đảm bảo lỗi được in ra Terminal để debug
+      console.error('[ServerAction Error]:', error)
+
       return { success: false, error: getErrorMessage(error) }
     }
   }

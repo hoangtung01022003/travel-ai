@@ -17,12 +17,12 @@ const mapAuthError = (error: AuthError): string => {
   }
 }
 
-export const loginAction = createValidatedAction<typeof loginSchema, void>(
+export const loginAction = createValidatedAction<typeof loginSchema, string>(
   loginSchema,
   async (validatedData) => {
     const supabase = await createClient()
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data: authData, error } = await supabase.auth.signInWithPassword({
       email: validatedData.email,
       password: validatedData.password,
     })
@@ -30,5 +30,27 @@ export const loginAction = createValidatedAction<typeof loginSchema, void>(
     if (error) {
       throw new Error(mapAuthError(error))
     }
+
+    if (!authData.user) {
+      throw new Error('Đăng nhập thành công nhưng không tìm thấy thông tin người dùng.')
+    }
+
+    // Lấy role của người dùng
+    // Fetch role from profiles
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', authData.user.id)
+      .single()
+
+    const role = profile?.role || 'user'
+
+    // Sync role to user_metadata for middleware performance
+    // This allows the middleware to read the role from the token without a DB query
+    await supabase.auth.updateUser({
+      data: { role }
+    })
+
+    return role
   }
 )

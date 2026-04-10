@@ -55,56 +55,29 @@ export default function Header({ serverProfile = null }: { serverProfile?: Profi
     }, 8000)
 
     // Dùng onAuthStateChange làm nguồn sự thật DUY NHẤT
-    // INITIAL_SESSION sẽ luôn fire ngay khi mount với trạng thái session thực tế
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (cancelled) return
 
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        // Đăng nhập hoặc token được refresh → fetch profile
+      // console.log('Auth Event Header:', event, session?.user?.id)
+
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
         if (session?.user) {
           const { data } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', session.user.id)
             .single()
-          if (!cancelled && data) setUser(data)
-        }
-        if (!cancelled) setAuthLoading(false)
-      } else if (event === 'INITIAL_SESSION') {
-        // INITIAL_SESSION: trạng thái auth ban đầu khi app mount
-        if (session?.user) {
-          // Có session → fetch profile
-          const { data } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single()
-          if (!cancelled && data) setUser(data)
-          if (!cancelled) setAuthLoading(false)
+          if (!cancelled && data) {
+            setUser(data)
+          }
         } else {
-          // Không có session → xác nhận chưa đăng nhập bằng getUser() (secure check)
-          // getUser() gọi đến Supabase server để xác minh, không dùng cache local
-          const {
-            data: { user: authUser },
-          } = await supabase.auth.getUser()
           if (!cancelled) {
-            if (authUser) {
-              // getUser() trả về user → token hợp lệ dù session chưa được parse
-              const { data } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', authUser.id)
-                .single()
-              if (data) setUser(data)
-            } else {
-              // Thực sự chưa đăng nhập
-              setUser(null)
-            }
-            setAuthLoading(false)
+            setUser(null)
           }
         }
+        if (!cancelled) setAuthLoading(false)
       } else if (event === 'SIGNED_OUT') {
         if (!cancelled) {
           setUser(null)
@@ -121,10 +94,14 @@ export default function Header({ serverProfile = null }: { serverProfile?: Profi
   }, [supabase])
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    setUser(null)
-    router.push('/')
-    router.refresh()
+    setAuthLoading(true)
+    try {
+      // Chuyển sang dùng server route để xử lý logout và dọn dẹp cookie triệt để
+      window.location.href = '/api/auth/sign-out'
+    } catch (error) {
+      console.error('Sign out failed:', error)
+      setAuthLoading(false)
+    }
   }
 
   return (
