@@ -63,7 +63,7 @@ export const FeaturedDestinations = ({
                   <Image
                     src={dest.cover_image}
                     alt={dest.name}
-                    fill
+                    fill sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw" quality={85}
                     className="object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                 ) : (

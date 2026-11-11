@@ -87,7 +87,7 @@ export const TourDetailPageClient = ({ tour }: TourDetailPageClientProps) => {
           <Image
             src={coverImages[0].image_url}
             alt={tour.name as string}
-            fill
+            fill sizes="100vw" quality={90}
             className="object-cover"
             priority
           />

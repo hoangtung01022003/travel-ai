@@ -88,7 +88,7 @@ export const DestinationDetailPageClient = ({
             <Image
               src={allImages[currentImage]?.image_url || ''}
               alt={destination.name as string}
-              fill
+              fill sizes="100vw" quality={90}
               className="object-cover"
             />
           ) : (
@@ -142,7 +142,7 @@ export const DestinationDetailPageClient = ({
               <Image
                 src={img.image_url}
                 alt=""
-                fill
+                fill sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw" quality={85}
                 className="object-cover transition-transform hover:scale-105"
               />
               {i === 3 && allImages.length > 5 && (
@@ -221,7 +221,7 @@ export const DestinationDetailPageClient = ({
                         <Image
                           src={attraction.image_url as string}
                           alt={attraction.name as string}
-                          fill
+                          fill sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw" quality={85}
                           className="object-cover"
                         />
                       </div>

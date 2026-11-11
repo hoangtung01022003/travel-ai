@@ -230,7 +230,7 @@ export const HotelPageClient = ({ hotels, totalCount }: HotelPageClientProps) =>
               <div className="group border-border card-hover bg-card h-full overflow-hidden rounded-md border p-2.5">
                 <div className="relative h-56 overflow-hidden rounded-sm">
                   {hotel.cover_image ? (
-                    <Image src={hotel.cover_image} alt={hotel.name} fill
+                    <Image src={hotel.cover_image} alt={hotel.name} fill sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw" quality={85}
                       className="object-cover transition-transform duration-500 group-hover:scale-105" />
                   ) : (
                     <div className="bg-muted flex h-full w-full items-center justify-center">

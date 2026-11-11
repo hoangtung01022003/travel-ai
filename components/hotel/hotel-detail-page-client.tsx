@@ -127,7 +127,7 @@ export const HotelDetailPageClient = ({
           <Image
             src={allImages[imgIndex]?.image_url || ''}
             alt={hotel.name as string}
-            fill
+            fill sizes="100vw" quality={90}
             className="object-cover"
             priority
           />
@@ -209,7 +209,7 @@ export const HotelDetailPageClient = ({
                         <Image
                           src={room.image_url as string}
                           alt={room.name as string}
-                          fill
+                          fill sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw" quality={85}
                           className="object-cover"
                         />
                       </div>

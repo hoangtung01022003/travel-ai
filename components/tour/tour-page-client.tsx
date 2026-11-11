@@ -229,7 +229,7 @@ export const TourPageClient = ({ tours, totalCount }: TourPageClientProps) => {
               <div className="group border-border card-hover bg-card h-full overflow-hidden rounded-md border p-2.5">
                 <div className="relative h-56 overflow-hidden rounded-sm">
                   {tour.cover_image ? (
-                    <Image src={tour.cover_image as string} alt={tour.name as string} fill
+                    <Image src={tour.cover_image as string} alt={tour.name as string} fill sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw" quality={85}
                       className="object-cover transition-transform duration-500 group-hover:scale-105" />
                   ) : (
                     <div className="bg-muted flex h-full w-full items-center justify-center">
