@@ -65,7 +65,13 @@ export const getDestinations = createServerAction(
 
 export const getDestinationBySlug = createServerAction(
   async (slug?: Destination['slug']) => {
+    if (!slug) return null
     const supabase = await createClient()
+
+    const rawSlug = slug.trim()
+    const decodedSlug = decodeURIComponent(rawSlug)
+    const dashedSlug = decodedSlug.replace(/\s+/g, '-')
+    const spacedSlug = decodedSlug.replace(/-/g, ' ')
 
     const { data: destination, error: destError } = await supabase
       .from('destinations')
@@ -75,8 +81,8 @@ export const getDestinationBySlug = createServerAction(
        attractions(id, name, description, image_url, entry_fee, sort_order),
        destination_tags(tags(id, name, slug))`
       )
-      .eq('slug', slug)
-      .single()
+      .or(`slug.eq."${rawSlug}",slug.eq."${decodedSlug}",slug.eq."${dashedSlug}",slug.eq."${spacedSlug}"`)
+      .maybeSingle()
 
     if (destError) throw new Error(destError.message)
     if (!destination) return null

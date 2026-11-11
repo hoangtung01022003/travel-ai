@@ -93,7 +93,7 @@ function ActivityRow({ act, isLast }: { act: AiActivity; isLast: boolean }) {
 function DayCard({ day, index }: { day: AiItinerary['days'][number]; index: number }) {
   const [open, setOpen] = useState(index === 0)
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-white">
+    <div className="overflow-hidden rounded-md border border-border bg-card shadow-[0_10px_28px_-20px_rgba(18,48,42,0.45)]">
       <button
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center gap-4 px-5 py-4 text-left hover:bg-muted/40 transition-colors"
@@ -150,10 +150,10 @@ function ConfirmDeleteDialog({
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="relative z-10 w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl"
+        className="relative z-10 w-full max-w-sm rounded-md bg-white p-6 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-destructive/10">
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-md bg-destructive/10">
           <AlertTriangle className="h-6 w-6 text-destructive" />
         </div>
         <h3 className="mb-1 text-lg font-bold">Xóa lịch trình?</h3>
@@ -206,7 +206,7 @@ function ItineraryCard({
     <>
       <motion.div
         layout
-        className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm"
+        className="overflow-hidden rounded-md border border-border bg-card shadow-[0_10px_28px_-20px_rgba(18,48,42,0.45)]"
       >
         {/* Summary row */}
         <div className="flex w-full items-start gap-4 p-5">
@@ -214,7 +214,7 @@ function ItineraryCard({
             onClick={() => setExpanded((e) => !e)}
             className="flex flex-1 items-start gap-4 text-left"
           >
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-primary/10">
               <Sparkles className="h-6 w-6 text-primary" />
             </div>
 
@@ -327,7 +327,7 @@ export default function ItinerariesClient({ itineraries }: { itineraries: Itiner
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Lịch trình của tôi</h1>
+          <h1 className="font-display text-primary relative pb-2 text-3xl font-semibold after:absolute after:bottom-0 after:left-0 after:h-[3px] after:w-12 after:rounded-full after:bg-[#c9932b] after:content-['']">Lịch trình của tôi</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {usedCount} lịch trình đã tạo bằng AI
           </p>
@@ -340,7 +340,7 @@ export default function ItinerariesClient({ itineraries }: { itineraries: Itiner
       </div>
 
       {/* Quota bar */}
-      <div className={`rounded-2xl border p-4 ${isAtLimit ? 'border-destructive/30 bg-destructive/5' : 'border-border bg-white'}`}>
+      <div className={`rounded-md border p-4 ${isAtLimit ? 'border-destructive/30 bg-destructive/5' : 'border-border bg-white'}`}>
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium flex items-center gap-1.5">
             <Sparkles className="h-4 w-4 text-primary" />
@@ -372,7 +372,7 @@ export default function ItinerariesClient({ itineraries }: { itineraries: Itiner
 
       {/* Empty state */}
       {list.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border py-20 text-center">
+        <div className="flex flex-col items-center justify-center rounded-md border border-dashed border-border py-20 text-center">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
             <Sparkles className="h-8 w-8 text-primary" />
           </div>

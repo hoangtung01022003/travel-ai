@@ -115,7 +115,7 @@ function BookingCard({ booking }: { booking: Booking }) {
   return (
     <motion.div
       layout
-      className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm"
+      className="overflow-hidden rounded-md border border-border bg-card shadow-[0_10px_28px_-20px_rgba(18,48,42,0.45)]"
     >
       {/* Main row */}
       <div className="flex gap-0 sm:gap-4">
@@ -323,7 +323,7 @@ export default function MyToursClient({ bookings }: MyToursClientProps) {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       <div className="mb-6 flex flex-col gap-1">
-        <h1 className="text-2xl font-bold">Đặt chỗ của tôi</h1>
+        <h1 className="font-display text-primary relative pb-2 text-3xl font-semibold after:absolute after:bottom-0 after:left-0 after:h-[3px] after:w-12 after:rounded-full after:bg-[#c9932b] after:content-['']">Đặt chỗ của tôi</h1>
         <p className="text-muted-foreground text-sm">
           Quản lý tất cả tour và khách sạn bạn đã đặt
         </p>
@@ -358,7 +358,7 @@ export default function MyToursClient({ bookings }: MyToursClientProps) {
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-border py-20 text-center"
+          className="flex flex-col items-center justify-center gap-4 rounded-md border border-dashed border-border py-20 text-center"
         >
           <ShoppingBag className="h-12 w-12 text-muted-foreground/30" />
           <div>

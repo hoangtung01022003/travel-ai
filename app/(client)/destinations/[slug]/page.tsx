@@ -11,11 +11,9 @@ export default async function DestinationDetailPage({ params }: PageProps) {
 
   const result = await getDestinationBySlug(slug)
 
-  if (!result.success) {
+  if (!result.success || !result.data) {
     notFound()
   }
-
-  console.log(result.data)
 
   return <DestinationDetailPageClient destination={result.data} />
 }

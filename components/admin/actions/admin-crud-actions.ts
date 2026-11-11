@@ -205,7 +205,7 @@ export const adminCreateHotel = createServerAction(
         .trim()
         .replace(/\s+/g, '-')
 
-    const { error } = await supabase.from('hotels').insert({
+    const { data: created, error } = await supabase.from('hotels').insert({
       name,
       slug,
       description: (formData.get('description') as string) || null,
@@ -226,10 +226,10 @@ export const adminCreateHotel = createServerAction(
       longitude: formData.get('longitude')
         ? Number(formData.get('longitude'))
         : null,
-    })
+    }).select('id').single()
     if (error) throw new Error(error.message)
     revalidatePath('/admin/hotels')
-    return { success: true }
+    return { success: true, id: created.id as string }
   }
 )
 

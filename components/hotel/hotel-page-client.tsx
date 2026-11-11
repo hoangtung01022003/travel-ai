@@ -1,5 +1,7 @@
 'use client'
 
+import { PageBanner } from '@/components/common/page-banner'
+import { BedDouble as BedDoubleIcon } from 'lucide-react'
 import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Star, MapPin, SlidersHorizontal, X, ChevronDown, ChevronUp, Filter } from 'lucide-react'
@@ -77,15 +79,16 @@ export const HotelPageClient = ({ hotels, totalCount }: HotelPageClientProps) =>
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold lg:text-4xl">
-          Khách sạn <span className="text-gradient">chất lượng</span>
-        </h1>
-        <p className="text-muted-foreground">Tìm nơi lưu trú hoàn hảo cho chuyến đi của bạn</p>
-      </div>
+      <PageBanner
+        eyebrow="Nơi dừng chân"
+        title="Khách sạn"
+        highlight="chất lượng"
+        description="Tìm nơi lưu trú hoàn hảo cho chuyến đi của bạn"
+        icon={BedDoubleIcon}
+      />
 
       {/* Filter Panel */}
-      <div className="border-border mb-8 rounded-2xl border bg-white shadow-sm overflow-hidden">
+      <div className="border-border bg-card mb-8 overflow-hidden rounded-md border border-t-4 border-t-[#c9932b] shadow-[0_10px_30px_-18px_rgba(18,48,42,0.4)]">
         <div className="flex gap-3 p-4">
           <SearchInput
             className="flex-1"
@@ -204,7 +207,7 @@ export const HotelPageClient = ({ hotels, totalCount }: HotelPageClientProps) =>
 
       <p className="mb-4 text-sm text-muted-foreground">{totalCount} khách sạn được tìm thấy</p>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {hotels.length === 0 ? (
           <div className="col-span-full py-16 text-center">
             <MapPin className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
@@ -224,11 +227,11 @@ export const HotelPageClient = ({ hotels, totalCount }: HotelPageClientProps) =>
             transition={{ delay: index * 0.04 }}
           >
             <Link href={`/hotels/${hotel.slug}`}>
-              <div className="group border-border card-hover overflow-hidden rounded-2xl border bg-white">
-                <div className="relative h-56 overflow-hidden">
+              <div className="group border-border card-hover bg-card h-full overflow-hidden rounded-md border p-2.5">
+                <div className="relative h-56 overflow-hidden rounded-sm">
                   {hotel.cover_image ? (
                     <Image src={hotel.cover_image} alt={hotel.name} fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-110" />
+                      className="object-cover transition-transform duration-500 group-hover:scale-105" />
                   ) : (
                     <div className="bg-muted flex h-full w-full items-center justify-center">
                       <MapPin className="text-muted-foreground h-8 w-8" />
@@ -248,7 +251,7 @@ export const HotelPageClient = ({ hotels, totalCount }: HotelPageClientProps) =>
                     </div>
                     <span className="text-muted-foreground text-xs">{hotel.review_count} đánh giá</span>
                   </div>
-                  <h3 className="group-hover:text-primary mb-1 text-lg font-semibold transition-colors">{hotel.name}</h3>
+                  <h3 className="group-hover:text-secondary mb-1 text-xl font-semibold transition-colors">{hotel.name}</h3>
                   <div className="text-muted-foreground mb-2 flex items-center gap-1 text-sm">
                     <MapPin className="h-3.5 w-3.5" />{hotel.province}
                   </div>

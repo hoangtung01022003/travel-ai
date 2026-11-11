@@ -1,5 +1,7 @@
 'use client'
 
+import { PageBanner } from '@/components/common/page-banner'
+import { Mountain as MountainIcon } from 'lucide-react'
 import type { Destination } from '@/types/destination'
 import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -97,18 +99,16 @@ export const DestinationPageClient = ({ destinations, totalCount }: DestinationP
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold lg:text-4xl">
-          Khám phá <span className="text-gradient">điểm đến</span>
-        </h1>
-        <p className="text-muted-foreground">
-          Tìm kiếm và khám phá những địa điểm du lịch tuyệt vời tại Việt Nam
-        </p>
-      </div>
+      <PageBanner
+        eyebrow="Khám phá Việt Nam"
+        title="Khám phá"
+        highlight="điểm đến"
+        description="Tìm kiếm và khám phá những địa điểm du lịch tuyệt vời tại Việt Nam"
+        icon={MountainIcon}
+      />
 
       {/* Filter Panel */}
-      <div className="border-border mb-8 rounded-2xl border bg-white shadow-sm overflow-hidden">
+      <div className="border-border bg-card mb-8 overflow-hidden rounded-md border border-t-4 border-t-[#c9932b] shadow-[0_10px_30px_-18px_rgba(18,48,42,0.4)]">
         {/* Search + toggle */}
         <div className="flex gap-3 p-4">
           <SearchInput
@@ -259,7 +259,7 @@ export const DestinationPageClient = ({ destinations, totalCount }: DestinationP
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
+          className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
         >
           {destinations.map((dest, index) => (
             <motion.div
@@ -269,14 +269,14 @@ export const DestinationPageClient = ({ destinations, totalCount }: DestinationP
               transition={{ delay: index * 0.04 }}
             >
               <Link href={`/destinations/${dest.slug}`}>
-                <div className="group border-border card-hover overflow-hidden rounded-2xl border bg-white">
-                  <div className="relative h-52 overflow-hidden">
+                <div className="group border-border card-hover bg-card h-full overflow-hidden rounded-md border p-2.5">
+                  <div className="relative h-52 overflow-hidden rounded-sm">
                     {dest.cover_image ? (
                       <Image
                         src={dest.cover_image}
                         alt={dest.name}
                         fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-110"
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
                       />
                     ) : (
                       <div className="bg-muted flex h-full w-full items-center justify-center">
@@ -294,7 +294,7 @@ export const DestinationPageClient = ({ destinations, totalCount }: DestinationP
                     <div className="text-muted-foreground mb-1 flex items-center gap-1 text-sm">
                       <MapPin className="h-3.5 w-3.5" />{dest.province}
                     </div>
-                    <h3 className="group-hover:text-primary mb-1 text-lg font-semibold transition-colors">
+                    <h3 className="group-hover:text-secondary mb-1 text-xl font-semibold transition-colors">
                       {dest.name}
                     </h3>
                     <p className="text-muted-foreground mb-3 line-clamp-2 text-sm">{dest.description}</p>

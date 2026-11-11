@@ -14,7 +14,7 @@ import { FieldGroup } from '@/components/ui/field'
 import { ControlledInput } from '@/components/ui/controlled-input'
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { Eye, EyeOff, Loader2, Lock, Mail, MapPin } from 'lucide-react'
+import { Eye, EyeOff, Loader2, Lock, Mail, Compass } from 'lucide-react'
 import { APP_NAME } from '@/lib/constants/common'
 import { Separator } from '../ui/separator'
 import { Label } from '../ui/label'
@@ -50,16 +50,16 @@ export const LoginPageClient = () => {
       transition={{ duration: 0.5 }}
       className="w-full max-w-md"
     >
-      <Card className="border-0 shadow-xl">
+      <Card className="border-accent border-t-4 shadow-2xl">
         <CardHeader className="pb-2 text-center">
           <Link
             href="/"
             className="mb-4 inline-flex items-center justify-center gap-2"
           >
-            <div className="bg-primary flex h-10 w-10 items-center justify-center rounded-xl">
-              <MapPin className="h-6 w-6 text-white" />
+            <div className="bg-primary text-accent flex h-10 w-10 rotate-45 items-center justify-center rounded-md">
+              <Compass className="h-5 w-5 -rotate-45" />
             </div>
-            <span className="text-gradient text-2xl font-bold">{APP_NAME}</span>
+            <span className="font-display text-primary ml-1 text-2xl font-semibold">{APP_NAME}</span>
           </Link>
           <h1 className="text-xl font-semibold">Chào mừng trở lại!</h1>
           <p className="text-muted-foreground text-sm">

@@ -75,7 +75,7 @@ function BookingDetailDialog({ booking, onClose }: { booking: Booking; onClose: 
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
       <div
-        className="relative z-10 w-full max-w-lg rounded-2xl bg-white shadow-2xl overflow-hidden"
+        className="relative z-10 w-full max-w-lg rounded-md bg-white shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -214,7 +214,7 @@ export default function BookingsClient({ bookings, totalRevenue }: BookingsClien
         ].map((s) => {
           const Icon = s.icon
           return (
-            <div key={s.label} className="rounded-xl border border-border bg-white p-5 flex items-center gap-4">
+            <div key={s.label} className="rounded-md border border-border bg-card shadow-[0_10px_28px_-20px_rgba(18,48,42,0.45)] p-5 flex items-center gap-4">
               <div className={`rounded-xl p-2.5 ${s.bg}`}>
                 <Icon className={`h-5 w-5 ${s.color}`} />
               </div>
@@ -228,7 +228,7 @@ export default function BookingsClient({ bookings, totalRevenue }: BookingsClien
       </div>
 
       {/* Filters */}
-      <div className="rounded-xl border border-border bg-white p-4">
+      <div className="rounded-md border border-border bg-card shadow-[0_10px_28px_-20px_rgba(18,48,42,0.45)] p-4">
         <div className="flex flex-wrap items-center gap-3">
           {/* Search */}
           <div className="relative flex-1 min-w-48">
@@ -278,7 +278,7 @@ export default function BookingsClient({ bookings, totalRevenue }: BookingsClien
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border border-border bg-white overflow-hidden">
+      <div className="rounded-md border border-border bg-card shadow-[0_10px_28px_-20px_rgba(18,48,42,0.45)] overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <p className="text-sm font-medium">
             {filtered.length} bookings

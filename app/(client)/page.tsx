@@ -5,7 +5,7 @@ import { getHotels } from '@/components/hotel/actions/hotel-actions'
 export default async function Home() {
   const [destinationResult, hotelResult] = await Promise.all([
     getDestinations({ featured: true, limit: 4 }),
-    getHotels({ featured: true, limit: 3 }),
+    getHotels({ featured: true, limit: 4 }),
   ])
 
   const destinations =

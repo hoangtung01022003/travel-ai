@@ -8,13 +8,16 @@ import {
 } from '@/lib/schemas/ai-itinerary.schema'
 
 // ── Model fallback list ──────────────────────────────────────────────────────
+// Ưu tiên dòng Flash Lite vì có hạn mức Free lớn nhất: 15 RPM và 500 RPD (gấp 25 lần dòng Flash thường vốn chỉ có 20 RPD)
 const GEMINI_MODELS = [
-  'gemini-2.5-flash',
-  'gemini-1.5-flash',
-  'gemini-1.5-pro',
+  'gemini-3.5-flash-lite', // 15 RPM, 500 RPD (tối ưu nhất, không lo bị nghẽn)
+  'gemini-3.1-flash-lite', // 15 RPM, 500 RPD (dự phòng)
+  'gemini-flash-lite-latest',
+  'gemini-3.8-flash',      // 5 RPM, 20 RPD
+  'gemini-3.5-flash',      // 5 RPM, 20 RPD
 ]
 
-// Retry across models when a 503 / overload error occurs
+// Retry và tự động chuyển model khi gặp lỗi quá tải (503), hết hạn mức (429) hoặc model không hỗ trợ (404)
 async function callGeminiWithRetry(prompt: string): Promise<string> {
   let lastError: unknown
 
@@ -35,20 +38,52 @@ async function callGeminiWithRetry(prompt: string): Promise<string> {
       } catch (err: unknown) {
         lastError = err
         const msg = err instanceof Error ? err.message : String(err)
-        const isOverload = msg.includes('503') || msg.includes('UNAVAILABLE') || msg.includes('overloaded')
+        console.warn(`[Gemini API] Model ${model} (attempt ${attempt}) thất bại:`, msg)
 
-        if (!isOverload) throw err          // non-503 error → rethrow immediately
-        if (attempt === 1) {
-          // Brief pause before retry on same model
-          await new Promise(r => setTimeout(r, 1500))
+        // Phát hiện lỗi hết số dư tài khoản trả trước (Prepayment credits depleted)
+        if (msg.includes('prepayment credits are depleted') || msg.includes('402')) {
+          throw new Error(
+            'API Key Gemini đã hết hạn mức tín dụng trả trước (Prepayment credits depleted). Vui lòng nạp thêm credit trên Google AI Studio hoặc tạo một API Key mới (Free tier) tại aistudio.google.com.'
+          )
         }
-        // else fall through to next model
+
+        const isOverload =
+          msg.includes('503') ||
+          msg.includes('UNAVAILABLE') ||
+          msg.includes('overloaded')
+        const isRateLimit =
+          msg.includes('429') ||
+          msg.includes('RESOURCE_EXHAUSTED') ||
+          msg.includes('quota')
+        const isModelNotFound =
+          msg.includes('404') ||
+          msg.includes('NOT_FOUND') ||
+          msg.includes('not supported') ||
+          msg.includes('not available')
+
+        // Nếu model bị 404 (không khả dụng) hoặc 429 (hết quota), chuyển ngay sang model dự phòng
+        if (isModelNotFound || isRateLimit) {
+          break
+        }
+
+        // Nếu bị quá tải tạm thời (503) ở lần thử 1, đợi 1.5s rồi thử lại
+        if (isOverload && attempt === 1) {
+          await new Promise((r) => setTimeout(r, 1500))
+          continue
+        }
+
+        // Các trường hợp khác: chuyển sang model tiếp theo
+        break
       }
     }
   }
 
-  throw lastError ?? new Error('Tất cả model AI hiện đang quá tải. Vui lòng thử lại sau vài phút.')
+  throw (
+    lastError ??
+    new Error('Tất cả model AI hiện không khả dụng hoặc đã hết hạn mức. Vui lòng thử lại sau vài phút.')
+  )
 }
+
 
 // ── POST /api/ai/generate-itinerary ──────────────────────────────────────────
 

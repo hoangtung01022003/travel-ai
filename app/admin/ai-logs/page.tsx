@@ -29,12 +29,12 @@ export default async function AdminAiLogsPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold">AI Prompt Logs</h1>
+          <h1 className="font-display text-primary relative pb-2 text-3xl font-semibold after:absolute after:bottom-0 after:left-0 after:h-[3px] after:w-12 after:rounded-full after:bg-[#c9932b] after:content-['']">AI Prompt Logs</h1>
           <p className="text-sm text-muted-foreground">
             {logs?.length ?? 0} requests gần đây
           </p>
         </div>
-        <div className="rounded-xl border border-border bg-white p-4 text-center">
+        <div className="rounded-md border border-border bg-card shadow-[0_10px_28px_-20px_rgba(18,48,42,0.45)] p-4 text-center">
           <p className="text-2xl font-bold text-primary">{logs?.length ?? 0}</p>
           <p className="text-xs text-muted-foreground">Tổng requests</p>
         </div>

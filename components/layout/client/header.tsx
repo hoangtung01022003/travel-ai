@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import {
-  MapPin,
+  Compass,
   Menu,
   X,
   User,
@@ -28,6 +28,7 @@ import { NAV_ITEMS, APP_NAME } from '@/lib/constants/common'
 import { createClient } from '@/lib/supabase/client'
 import { getInitials } from '@/lib/utils/common'
 import type { Profile } from '@/types/user'
+import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 export default function Header({ serverProfile = null }: { serverProfile?: Profile | null }) {
   const pathname = usePathname()
@@ -46,43 +47,67 @@ export default function Header({ serverProfile = null }: { serverProfile?: Profi
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  // Đồng bộ lại khi server layout render lại (sau login/logout, router.refresh)
+  const [prevServerProfile, setPrevServerProfile] = useState(serverProfile)
+  if (serverProfile !== prevServerProfile) {
+    setPrevServerProfile(serverProfile)
+    if (serverProfile) {
+      setUser(serverProfile)
+      setAuthLoading(false)
+    }
+  }
+
   useEffect(() => {
     let cancelled = false
 
-    // Timeout an toàn: nếu sau 8s vẫn chưa resolve thì tắt loading
     const timeout = setTimeout(() => {
       if (!cancelled) setAuthLoading(false)
-    }, 8000)
+    }, 5000)
 
-    // Dùng onAuthStateChange làm nguồn sự thật DUY NHẤT
+    const buildFallback = (u: SupabaseUser): Profile =>
+      ({
+        id: u.id,
+        email: u.email ?? '',
+        full_name: (u.user_metadata?.full_name as string) || u.email?.split('@')[0] || '',
+        role: (u.user_metadata?.role as Profile['role']) || 'user',
+        phone: null,
+        avatar_url: null,
+        status: 'active',
+        created_at: u.created_at,
+        updated_at: u.created_at,
+      }) as unknown as Profile
+
+    const loadProfile = async (sessionUser: SupabaseUser) => {
+      // Hiển thị ngay tên từ metadata, sau đó mới cập nhật từ bảng profiles
+      setUser((prev) => (prev && prev.id === sessionUser.id ? prev : buildFallback(sessionUser)))
+      setAuthLoading(false)
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', sessionUser.id)
+        .maybeSingle()
+      if (!cancelled && data) setUser(data)
+    }
+
+    // QUAN TRỌNG: không được await truy vấn Supabase trực tiếp trong callback
+    // onAuthStateChange (gây deadlock khiến header treo, không hiện tên user).
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return
-
-      // console.log('Auth Event Header:', event, session?.user?.id)
-
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
-        if (session?.user) {
-          const { data } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single()
-          if (!cancelled && data) {
-            setUser(data)
-          }
-        } else {
-          if (!cancelled) {
-            setUser(null)
-          }
-        }
-        if (!cancelled) setAuthLoading(false)
-      } else if (event === 'SIGNED_OUT') {
-        if (!cancelled) {
-          setUser(null)
-          setAuthLoading(false)
-        }
+      if (event === 'SIGNED_OUT') {
+        setUser(null)
+        setAuthLoading(false)
+        return
+      }
+      if (session?.user) {
+        const u = session.user
+        setTimeout(() => {
+          if (!cancelled) loadProfile(u)
+        }, 0)
+      } else if (event === 'INITIAL_SESSION') {
+        setUser(null)
+        setAuthLoading(false)
       }
     })
 
@@ -106,23 +131,28 @@ export default function Header({ serverProfile = null }: { serverProfile?: Profi
 
   return (
     <header
-      className={`fixed top-0 right-0 left-0 z-50 transition-all duration-300 ${scrolled
-          ? 'border-border border-b bg-white/95 shadow-sm backdrop-blur-md'
-          : 'bg-transparent'
+      className={`fixed top-0 right-0 left-0 z-50 border-b transition-all duration-300 ${scrolled
+          ? 'border-border bg-background/95 shadow-[0_6px_24px_-12px_rgba(18,48,42,0.25)] backdrop-blur-md'
+          : 'border-border/60 bg-background'
         }`}
     >
+      <div className="bg-[#12302a] text-accent hidden h-7 items-center justify-center text-[11px] tracking-[0.2em] uppercase sm:flex">
+        Hành trình Việt Nam · Gợi ý lịch trình bằng AI
+      </div>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between lg:h-20">
           {/* Logo */}
-          <Link href="/" className="group flex items-center gap-2">
-            <div className="bg-primary flex h-9 w-9 items-center justify-center rounded-xl transition-transform group-hover:scale-110">
-              <MapPin className="h-5 w-5 text-white" />
+          <Link href="/" className="group flex items-center gap-2.5">
+            <div className="bg-primary text-accent ring-accent/40 flex h-10 w-10 rotate-45 items-center justify-center rounded-md ring-2 ring-offset-2 ring-offset-background transition-transform group-hover:rotate-[135deg]">
+              <Compass className="h-5 w-5 -rotate-45" />
             </div>
-            <span className="text-gradient text-xl font-bold">{APP_NAME}</span>
+            <span className="font-display text-primary text-2xl font-semibold tracking-tight">
+              {APP_NAME}
+            </span>
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden items-center gap-1 lg:flex">
+          <nav className="border-border bg-card hidden items-center gap-1 rounded-full border p-1 lg:flex">
             {NAV_ITEMS.map((item) => {
               const isActive =
                 pathname === item.href || pathname.startsWith(item.href + '/')
@@ -130,18 +160,18 @@ export default function Header({ serverProfile = null }: { serverProfile?: Profi
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`relative rounded-lg px-4 py-2 text-sm font-medium transition-colors ${isActive
-                      ? 'text-primary'
-                      : 'text-foreground/70 hover:text-foreground hover:bg-muted'
+                  className={`relative isolate rounded-full px-4 py-2 text-sm font-medium transition-colors ${isActive
+                      ? 'text-primary-foreground'
+                      : 'text-foreground/75 hover:text-secondary'
                     }`}
                 >
-                  {item.label}
                   {isActive && (
                     <motion.div
                       layoutId="nav-indicator"
-                      className="bg-primary absolute right-2 bottom-0 left-2 h-0.5 rounded-full"
+                      className="bg-primary absolute inset-0 -z-10 rounded-full"
                     />
                   )}
+                  {item.label}
                 </Link>
               )
             })}
@@ -157,7 +187,7 @@ export default function Header({ serverProfile = null }: { serverProfile?: Profi
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex cursor-pointer items-center gap-2 transition-opacity hover:opacity-80">
-                    <Avatar className="border-primary/20 h-9 w-9 border-2">
+                    <Avatar className="border-accent h-9 w-9 border-2">
                       <AvatarImage src={user.avatar_url || ''} />
                       <AvatarFallback>
                         {getInitials(user.full_name || user.email || 'U')}
@@ -213,7 +243,7 @@ export default function Header({ serverProfile = null }: { serverProfile?: Profi
                 <Button variant="ghost" size="sm" asChild>
                   <Link href="/login">Đăng nhập</Link>
                 </Button>
-                <Button size="sm" asChild>
+                <Button size="sm" variant="secondary" className="rounded-full px-4" asChild>
                   <Link href="/register">Đăng ký</Link>
                 </Button>
               </div>
@@ -249,9 +279,9 @@ export default function Header({ serverProfile = null }: { serverProfile?: Profi
                     key={item.href}
                     href={item.href}
                     onClick={() => setMobileOpen(false)}
-                    className={`rounded-lg px-4 py-3 text-sm font-medium transition-colors ${isActive
-                        ? 'bg-primary/10 text-primary'
-                        : 'text-foreground/70 hover:bg-muted'
+                    className={`border-l-2 px-4 py-3 text-sm font-medium transition-colors ${isActive
+                        ? 'border-secondary bg-secondary-light text-secondary'
+                        : 'text-foreground/75 hover:bg-muted border-transparent'
                       }`}
                   >
                     {item.label}

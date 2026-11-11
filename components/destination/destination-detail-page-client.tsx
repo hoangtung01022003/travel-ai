@@ -1,6 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
+import { getWishlistStatus, toggleWishlist } from '@/components/wishlist/actions/wishlist-actions'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
@@ -20,6 +23,10 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { formatPrice, timeAgo } from '@/lib/utils/common'
 import { DESTINATION_TYPES } from '@/lib/constants/common'
+import {
+  AttractionQuickView,
+  type QuickViewAttraction,
+} from '@/components/destination/attraction-quick-view'
 
 interface DestinationDetailPageClientProps {
   destination: DestinationDetail
@@ -29,6 +36,57 @@ export const DestinationDetailPageClient = ({
   destination,
 }: DestinationDetailPageClientProps) => {
   const [currentImage, setCurrentImage] = useState(0)
+  const [quickView, setQuickView] = useState<QuickViewAttraction | null>(null)
+  const [saved, setSaved] = useState(false)
+  const [savingWishlist, startSaving] = useTransition()
+  const router = useRouter()
+
+  const destinationId = destination.id as string
+
+  useEffect(() => {
+    let active = true
+    getWishlistStatus('destination', destinationId).then((v) => {
+      if (active) setSaved(v)
+    })
+    return () => {
+      active = false
+    }
+  }, [destinationId])
+
+  const handleToggleWishlist = () => {
+    const prev = saved
+    setSaved(!prev) // cập nhật lạc quan
+    startSaving(async () => {
+      const res = await toggleWishlist('destination', destinationId)
+      if (!res.ok) {
+        setSaved(prev)
+        if (res.reason === 'unauthenticated') {
+          toast.info('Vui lòng đăng nhập để lưu yêu thích')
+          router.push('/login')
+        } else {
+          toast.error('Không thể lưu yêu thích, vui lòng thử lại')
+        }
+        return
+      }
+      setSaved(res.saved)
+      toast.success(res.saved ? 'Đã lưu vào yêu thích' : 'Đã bỏ khỏi yêu thích')
+    })
+  }
+
+  const handleShare = async () => {
+    const url = window.location.href
+    const title = destination.name as string
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, url })
+        return
+      }
+      await navigator.clipboard.writeText(url)
+      toast.success('Đã sao chép liên kết')
+    } catch (err) {
+      if ((err as Error)?.name !== 'AbortError') toast.error('Không thể chia sẻ liên kết')
+    }
+  }
 
   const images = destination.destination_images || []
   const allImages = destination.cover_image
@@ -58,7 +116,7 @@ export const DestinationDetailPageClient = ({
 
       {/* Gallery */}
       <div className="mb-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="relative h-100 overflow-hidden rounded-2xl">
+        <div className="relative h-100 overflow-hidden rounded-md shadow-[10px_10px_0_0_#e3efe9] ring-1 ring-[#e4ddd0]">
           {allImages.length > 0 ? (
             <Image
               src={allImages[currentImage]?.image_url || ''}
@@ -85,12 +143,24 @@ export const DestinationDetailPageClient = ({
             </div>
           )}
           <div className="absolute top-4 right-4 flex gap-2">
-            <button className="flex h-10 w-10 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm transition-colors hover:bg-white">
+            <button
+              type="button"
+              onClick={handleToggleWishlist}
+              disabled={savingWishlist}
+              aria-pressed={saved}
+              title={saved ? 'Bỏ yêu thích' : 'Lưu yêu thích'}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm transition-colors hover:bg-white disabled:opacity-70"
+            >
               <Heart
-                className={`h-5 w-5 ${false ? 'fill-destructive text-destructive' : 'text-foreground'}`}
+                className={`h-5 w-5 transition-transform ${saved ? 'fill-[#b5432a] text-[#b5432a] scale-110' : 'text-foreground'}`}
               />
             </button>
-            <button className="flex h-10 w-10 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm transition-colors hover:bg-white">
+            <button
+              type="button"
+              onClick={handleShare}
+              title="Chia sẻ"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm transition-colors hover:bg-white"
+            >
               <Share2 className="h-5 w-5" />
             </button>
           </div>
@@ -134,7 +204,7 @@ export const DestinationDetailPageClient = ({
                 ))}
               </div>
             )}
-            <h1 className="mb-2 text-3xl font-bold lg:text-4xl">
+            <h1 className="text-primary mb-2 text-4xl font-semibold lg:text-5xl">
               {destination.name as string}
             </h1>
             <div className="text-muted-foreground flex flex-wrap items-center gap-4 text-sm">
@@ -159,7 +229,7 @@ export const DestinationDetailPageClient = ({
 
           {/* Description */}
           <div>
-            <h2 className="mb-3 text-xl font-semibold">Giới thiệu</h2>
+            <h2 className="mb-3 flex items-center gap-3 text-2xl font-semibold before:h-7 before:w-1.5 before:rounded-full before:bg-[#b5432a] before:content-['']">Giới thiệu</h2>
             <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
               {destination.description as string}
             </p>
@@ -168,13 +238,17 @@ export const DestinationDetailPageClient = ({
           {/* Attractions */}
           {attractions.length > 0 && (
             <div>
-              <h2 className="mb-4 text-xl font-semibold">Điểm tham quan</h2>
+              <h2 className="mb-4 flex items-center gap-3 text-2xl font-semibold before:h-7 before:w-1.5 before:rounded-full before:bg-[#b5432a] before:content-['']">Điểm tham quan</h2>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {attractions.map((attraction) => (
-                  <Card
+                  <button
+                    type="button"
                     key={attraction.id as string}
-                    className="card-hover overflow-hidden"
+                    onClick={() => setQuickView(attraction as unknown as QuickViewAttraction)}
+                    title="Xem nhanh"
+                    className="block w-full text-left"
                   >
+                  <Card className="card-hover h-full cursor-pointer overflow-hidden">
                     {!!attraction.image_url && (
                       <div className="relative h-40">
                         <Image
@@ -204,14 +278,21 @@ export const DestinationDetailPageClient = ({
                       </div>
                     </CardContent>
                   </Card>
+                  </button>
                 ))}
               </div>
             </div>
           )}
 
+          <AttractionQuickView
+            attraction={quickView}
+            destinationName={destination.name as string}
+            onOpenChange={(open) => !open && setQuickView(null)}
+          />
+
           {/* Reviews */}
           <div>
-            <h2 className="mb-4 text-xl font-semibold">
+            <h2 className="mb-4 flex items-center gap-3 text-2xl font-semibold before:h-7 before:w-1.5 before:rounded-full before:bg-[#b5432a] before:content-['']">
               Đánh giá ({destination.review_count as number})
             </h2>
             {reviews.length > 0 ? (
@@ -269,7 +350,7 @@ export const DestinationDetailPageClient = ({
 
         {/* Sidebar */}
         <div className="space-y-4">
-          <Card className="sticky top-24">
+          <Card className="sticky top-24 border-t-4 border-t-[#b5432a] shadow-[0_14px_30px_-20px_rgba(18,48,42,0.5)] lg:top-32">
             <CardContent className="p-6">
               <div className="mb-4 text-center">
                 <span className="text-muted-foreground text-sm">
@@ -303,11 +384,18 @@ export const DestinationDetailPageClient = ({
               <Button className="w-full" size="lg" asChild>
                 <Link href={`/ai-planner?destination=${encodeURIComponent(destination.name as string)}`}>✨ Tạo lịch trình AI</Link>
               </Button>
-              <Button variant="outline" className="mt-2 w-full" size="lg">
+              <Button
+                variant="outline"
+                className={`mt-2 w-full ${saved ? 'border-[#b5432a] text-[#b5432a]' : ''}`}
+                size="lg"
+                onClick={handleToggleWishlist}
+                disabled={savingWishlist}
+                aria-pressed={saved}
+              >
                 <Heart
-                  className={`mr-2 h-4 w-4 ${false ? 'fill-destructive text-destructive' : ''}`}
+                  className={`mr-2 h-4 w-4 ${saved ? 'fill-[#b5432a] text-[#b5432a]' : ''}`}
                 />
-                Lưu yêu thích
+                {saved ? 'Đã lưu yêu thích' : 'Lưu yêu thích'}
               </Button>
             </CardContent>
           </Card>

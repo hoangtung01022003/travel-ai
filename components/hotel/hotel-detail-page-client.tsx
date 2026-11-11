@@ -77,7 +77,7 @@ export const HotelDetailPageClient = ({
               )}
             </div>
           </div>
-          <h1 className="mb-2 text-3xl font-bold lg:text-4xl">
+          <h1 className="text-primary mb-2 text-4xl font-semibold lg:text-5xl">
             {hotel.name as string}
           </h1>
           <div className="text-muted-foreground flex flex-wrap items-center gap-4 text-sm">
@@ -103,7 +103,7 @@ export const HotelDetailPageClient = ({
       </div>
 
       {/* Image Gallery */}
-      <div className="relative mb-8 h-[300px] overflow-hidden rounded-2xl md:h-[450px]">
+      <div className="relative mb-8 h-[300px] overflow-hidden rounded-md shadow-[10px_10px_0_0_#e3efe9] ring-1 ring-[#e4ddd0] md:h-[450px]">
         {allImages.length > 0 ? (
           <Image
             src={allImages[imgIndex]?.image_url || ''}
@@ -150,7 +150,7 @@ export const HotelDetailPageClient = ({
         <div className="space-y-8 lg:col-span-2">
           {/* Description */}
           <section>
-            <h2 className="mb-3 text-xl font-bold">Giới thiệu</h2>
+            <h2 className="mb-3 flex items-center gap-3 text-2xl font-semibold before:h-7 before:w-1.5 before:rounded-full before:bg-[#b5432a] before:content-['']">Giới thiệu</h2>
             <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
               {hotel.description as string}
             </p>
@@ -159,7 +159,7 @@ export const HotelDetailPageClient = ({
           {/* Amenities */}
           {amenities.length > 0 && (
             <section>
-              <h2 className="mb-4 text-xl font-bold">Tiện nghi</h2>
+              <h2 className="mb-4 flex items-center gap-3 text-2xl font-semibold before:h-7 before:w-1.5 before:rounded-full before:bg-[#b5432a] before:content-['']">Tiện nghi</h2>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {amenities.map((a) => (
                   <div
@@ -176,14 +176,14 @@ export const HotelDetailPageClient = ({
           {/* Room Types */}
           {roomTypes.length > 0 && (
             <section>
-              <h2 className="mb-4 text-xl font-bold">Các loại phòng</h2>
+              <h2 className="mb-4 flex items-center gap-3 text-2xl font-semibold before:h-7 before:w-1.5 before:rounded-full before:bg-[#b5432a] before:content-['']">Các loại phòng</h2>
               <div className="space-y-4">
                 {roomTypes.map((room) => (
                   <motion.div
                     key={room.id as string}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="border-border flex flex-col overflow-hidden rounded-2xl border bg-white sm:flex-row"
+                    className="border-border bg-card flex flex-col overflow-hidden rounded-md border border-l-4 border-l-[#0f5c4d] transition-shadow hover:shadow-[6px_6px_0_0_#e3efe9] sm:flex-row"
                   >
                     {!!room.image_url && (
                       <div className="relative h-40 w-full shrink-0 sm:h-auto sm:w-56">
@@ -245,7 +245,7 @@ export const HotelDetailPageClient = ({
 
           {/* Reviews */}
           <section>
-            <h2 className="mb-4 text-xl font-bold">
+            <h2 className="mb-4 flex items-center gap-3 text-2xl font-semibold before:h-7 before:w-1.5 before:rounded-full before:bg-[#b5432a] before:content-['']">
               Đánh giá ({hotel.review_count as number})
             </h2>
             {reviews.length > 0 ? (
@@ -299,8 +299,8 @@ export const HotelDetailPageClient = ({
 
         {/* Sidebar */}
         <div className="lg:col-span-1">
-          <div className="sticky top-24 space-y-4">
-            <div className="border-border rounded-2xl border bg-white p-6">
+          <div className="sticky top-24 lg:top-32 space-y-4">
+            <div className="border-border bg-card rounded-md border border-t-4 border-t-[#b5432a] p-6 shadow-[0_14px_30px_-20px_rgba(18,48,42,0.5)]">
               <p className="text-muted-foreground mb-1 text-sm">Giá chỉ từ</p>
               <p className="text-primary mb-1 text-3xl font-bold">
                 {formatPrice(Number(hotel.min_price))}
@@ -321,7 +321,7 @@ export const HotelDetailPageClient = ({
               </Button>
             </div>
 
-            <div className="border-border rounded-2xl border bg-white p-6">
+            <div className="border-border rounded-md border bg-[#e3efe9]/60 p-6">
               <h3 className="mb-3 font-semibold">Vị trí</h3>
               <div className="bg-muted text-muted-foreground flex h-40 items-center justify-center rounded-xl text-sm">
                 <MapPin className="mr-2 h-5 w-5" /> Bản đồ sẽ hiển thị ở đây

@@ -5,52 +5,56 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --border: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --background: #ffffff;
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: #ff6b35;
-  --primary-hover: #e85d2c;
-  --primary-light: #fff3ed;
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: #1a56db;
-  --secondary-hover: #1648b8;
-  --secondary-light: #ebf0ff;
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --input: oklch(0.922 0 0);
-  --chart-1: oklch(0.809 0.105 251.813);
-  --chart-2: oklch(0.623 0.214 259.815);
-  --chart-3: oklch(0.546 0.245 262.881);
-  --chart-4: oklch(0.488 0.243 264.376);
-  --chart-5: oklch(0.424 0.199 265.638);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-  --accent: #06b6d4;
-  --accent-light: #ecfeff;
-  --success: #22c55e;
-  --warning: #eab308;
-  --radius: 0.75rem;
+  /* ===== Theme "Ngọc bích & Sơn mài" ===== */
+  --border: #e4ddd0;
+  --ring: #0f5c4d;
+  --background: #f7f3ec;
+  --foreground: #1f2a27;
+  --card: #fffdf9;
+  --card-foreground: #1f2a27;
+  --popover: #fffdf9;
+  --popover-foreground: #1f2a27;
+  --primary: #0f5c4d;
+  --primary-hover: #0b4a3e;
+  --primary-light: #e3efe9;
+  --primary-foreground: #f7f3ec;
+  --secondary: #b5432a;
+  --secondary-hover: #9a3822;
+  --secondary-light: #f8e7e1;
+  --secondary-foreground: #fffaf5;
+  --muted: #efe9de;
+  --muted-foreground: #6b6a62;
+  --accent: #c9932b;
+  --accent-light: #faf1dc;
+  --accent-foreground: #1f2a27;
+  --destructive: #b42318;
+  --input: #ddd5c6;
+  --chart-1: #0f5c4d;
+  --chart-2: #b5432a;
+  --chart-3: #c9932b;
+  --chart-4: #4f8a7b;
+  --chart-5: #7a5c3e;
+  --sidebar: #12302a;
+  --sidebar-foreground: #e9e4d8;
+  --sidebar-primary: #c9932b;
+  --sidebar-primary-foreground: #12302a;
+  --sidebar-accent: #1c443b;
+  --sidebar-accent-foreground: #f7f3ec;
+  --sidebar-border: #24493f;
+  --sidebar-ring: #c9932b;
+  --success: #2f7d4f;
+  --warning: #d49a1f;
+  --ink: #12302a;
+  --radius: 0.4rem;
 }
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-border: hsl(var(--border));
-  --color-ring: hsl(var(--ring));
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-ink: var(--ink);
+  --color-accent-light: var(--accent-light);
+  --font-display: var(--font-display);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -105,6 +109,12 @@
   }
   html {
     @apply font-sans h-full;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display), Georgia, serif;
+    letter-spacing: -0.01em;
   }
 }
 
@@ -163,33 +173,66 @@ body {
   background: var(--muted);
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
+  background: #b9b09f;
+  border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--primary);
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--ink);
 }
 
 /* ===== Custom Utilities ===== */
+/* Chữ nhấn: serif nghiêng màu son mài (thay cho gradient cũ) */
 .text-gradient {
-  background: linear-gradient(135deg, var(--primary), var(--secondary));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--secondary);
+  font-family: var(--font-display), Georgia, serif;
+  font-style: italic;
 }
 
 .glass {
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(247, 243, 236, 0.85);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(228, 221, 208, 0.6);
 }
 
 .card-hover {
-  transition: all 0.3s ease;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
 }
 .card-hover:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
+  border-color: var(--primary);
+  box-shadow: 6px 6px 0 0 var(--primary-light);
+}
+
+/* Hoa văn nền chấm tròn dùng cho các khối tối */
+.pattern-dots {
+  background-image: radial-gradient(rgba(201, 147, 43, 0.18) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+/* Gạch chân trang trí cho tiêu đề section */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--secondary);
+}
+.eyebrow::before {
+  content: '';
+  width: 28px;
+  height: 2px;
+  background: var(--accent);
 }
 
 /* ===== Animation Keyframes ===== */
@@ -221,4 +264,47 @@ body {
 
 .animate-slide-up {
   animation: slide-up 0.6s ease-out;
+}
+
+/* Font tiêu đề (khai báo trực tiếp để không phụ thuộc utility sinh tự động) */
+.font-display {
+  font-family: var(--font-display), Georgia, serif;
+}
+
+/* ===== Nền động toàn trang ===== */
+.page-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  background-image: radial-gradient(rgba(15, 92, 77, 0.07) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+.page-bg .blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(70px);
+  opacity: 0.35;
+  will-change: transform;
+}
+.page-bg .blob-1 { width: 420px; height: 420px; background: #0f5c4d; top: 10%; left: -120px; opacity: 0.18; animation: blob-drift-1 26s ease-in-out infinite; }
+.page-bg .blob-2 { width: 360px; height: 360px; background: #c9932b; top: 45%; right: -100px; opacity: 0.22; animation: blob-drift-2 30s ease-in-out infinite; }
+.page-bg .blob-3 { width: 300px; height: 300px; background: #b5432a; bottom: -80px; left: 35%; opacity: 0.14; animation: blob-drift-3 34s ease-in-out infinite; }
+.page-bg .leaf {
+  position: absolute;
+  color: rgba(15, 92, 77, 0.12);
+  animation: float-up 40s linear infinite;
+}
+
+@keyframes blob-drift-1 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(180px,120px) scale(1.15); } }
+@keyframes blob-drift-2 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-200px,-140px) scale(0.9); } }
+@keyframes blob-drift-3 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(140px,-180px) scale(1.2); } }
+@keyframes float-up {
+  0% { transform: translateY(110vh) rotate(0deg); }
+  100% { transform: translateY(-20vh) rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-bg .blob, .page-bg .leaf { animation: none; }
 }

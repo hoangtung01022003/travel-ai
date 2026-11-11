@@ -11,7 +11,7 @@ export default async function TourDetailPage({ params }: PageProps) {
 
   const result = await getTourByslug(slug)
 
-  if (!result.success) {
+  if (!result.success || !result.data) {
     notFound()
   }
 

@@ -2,8 +2,14 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { Sparkles, ArrowRight, Bot, Calendar, Heart } from 'lucide-react'
+import { ArrowRight, Bot, Calendar, Heart } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+
+const FEATURES = [
+  { icon: Bot, title: 'AI thông minh', text: 'Hiểu sở thích, ngân sách và nhịp độ chuyến đi của bạn.' },
+  { icon: Calendar, title: 'Chi tiết từng ngày', text: 'Lịch trình sáng – trưa – tối kèm gợi ý ẩm thực.' },
+  { icon: Heart, title: 'Lưu lịch trình', text: 'Lưu lại, xem lại và chỉnh sửa bất cứ lúc nào.' },
+]
 
 export const CtaSection = () => {
   return (
@@ -12,48 +18,23 @@ export const CtaSection = () => {
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        className="relative mx-auto max-w-5xl overflow-hidden rounded-3xl"
+        className="bg-secondary text-secondary-foreground relative mx-auto grid max-w-6xl overflow-hidden rounded-md lg:grid-cols-2"
       >
-        {/* Background */}
-        <div className="from-primary via-primary to-secondary absolute inset-0 bg-linear-to-r" />
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iYSIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVHJhbnNmb3JtPSJyb3RhdGUoNDUpIj48cGF0aCBkPSJNMCAyMGgyMHYyMEgyMHoiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNSkiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjYSkiLz48L3N2Zz4=')] opacity-30" />
+        <div className="pattern-dots pointer-events-none absolute inset-0 opacity-50" />
 
-        <div className="relative z-10 px-8 py-16 text-center text-white lg:px-16 lg:py-20">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-white/20 px-4 py-1.5 text-sm font-medium backdrop-blur-sm">
-            <Sparkles className="h-4 w-4" />
-            Tính năng AI thông minh
-          </div>
-
-          <h2 className="mb-4 text-3xl leading-tight font-bold lg:text-5xl">
-            Để AI lên kế hoạch
-            <br />
-            chuyến đi hoàn hảo cho bạn
+        <div className="relative z-10 px-8 py-14 lg:px-14 lg:py-16">
+          <span className="eyebrow mb-5 !text-[#f6dca0]">Tính năng AI</span>
+          <h2 className="mb-5 text-3xl leading-tight font-semibold lg:text-[2.75rem]">
+            Để AI lên kế hoạch cho
+            <span className="italic"> chuyến đi trong mơ</span>
           </h2>
-
-          <p className="mx-auto mb-8 max-w-2xl text-lg text-white/80">
-            Chỉ cần mô tả ước mơ du lịch của bạn, AI sẽ tạo lịch trình chi tiết
-            từng ngày kèm gợi ý ẩm thực, chi phí ước tính và mẹo du lịch.
+          <p className="mb-8 max-w-md text-base text-white/80">
+            Chỉ cần mô tả mong muốn, AI sẽ tạo lịch trình chi tiết từng ngày
+            kèm gợi ý ẩm thực, chi phí ước tính và mẹo du lịch.
           </p>
-
-          {/* Features */}
-          <div className="mx-auto mb-10 grid max-w-2xl grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="flex flex-col items-center gap-2 rounded-xl bg-white/10 p-4 backdrop-blur-sm">
-              <Bot className="h-8 w-8" />
-              <span className="text-sm font-medium">AI thông minh</span>
-            </div>
-            <div className="flex flex-col items-center gap-2 rounded-xl bg-white/10 p-4 backdrop-blur-sm">
-              <Calendar className="h-8 w-8" />
-              <span className="text-sm font-medium">Chi tiết từng ngày</span>
-            </div>
-            <div className="flex flex-col items-center gap-2 rounded-xl bg-white/10 p-4 backdrop-blur-sm">
-              <Heart className="h-8 w-8" />
-              <span className="text-sm font-medium">Lưu lịch trình</span>
-            </div>
-          </div>
-
           <Button
             size="xl"
-            className="text-primary bg-white shadow-xl hover:bg-white/90"
+            className="bg-card text-secondary hover:bg-accent hover:text-[#12302a] h-12 rounded-full px-7 text-base shadow-lg"
             asChild
           >
             <Link href="/ai-planner">
@@ -61,6 +42,26 @@ export const CtaSection = () => {
               <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
           </Button>
+        </div>
+
+        <div className="bg-[#12302a]/25 relative z-10 flex flex-col justify-center gap-px">
+          {FEATURES.map(({ icon: Icon, title, text }, i) => (
+            <div
+              key={title}
+              className="flex items-start gap-5 border-b border-white/10 px-8 py-7 last:border-0 lg:px-12"
+            >
+              <span className="font-display text-accent text-3xl leading-none font-semibold">
+                0{i + 1}
+              </span>
+              <div>
+                <div className="mb-1 flex items-center gap-2 font-semibold">
+                  <Icon className="h-4 w-4" />
+                  {title}
+                </div>
+                <p className="text-sm text-white/70">{text}</p>
+              </div>
+            </div>
+          ))}
         </div>
       </motion.div>
     </section>

@@ -2,7 +2,16 @@
 
 import { createServerAction } from '@/lib/utils/server-actions'
 import { createClient } from '@/lib/supabase/server'
-import { Hotel, HotelAmenity } from '@/types/hotel'
+import { Hotel } from '@/types/hotel'
+import type { Database } from '@/types/database'
+
+type Amenity = Omit<
+  Database['public']['Tables']['amenities']['Row'],
+  'created_at' | 'category'
+>
+
+const isMissingSchemaTableError = (error?: { code?: string } | null) =>
+  error?.code === 'PGRST205' || error?.code === 'PGRST200'
 
 export const getHotels = createServerAction(
   async (params?: {
@@ -67,42 +76,68 @@ export const getHotelBySlug = createServerAction(
   async (slug?: Hotel['slug']) => {
     const supabase = await createClient()
 
-    const { data: hotel, error: destError } = await supabase
+    const { data: hotel, error: hotelError } = await supabase
       .from('hotels')
-      .select(
-        `*, 
-       hotel_images(id, image_url, caption, sort_order),
-       room_types(*),
-       hotel_amenities(amenities(id, name, icon))`
-      )
+      .select('*')
       .eq('slug', slug)
-      .single()
+      .maybeSingle()
 
-    if (destError) throw new Error(destError.message)
+    if (hotelError) throw new Error(hotelError.message)
     if (!hotel) return null
 
-    const { data: reviews, error: reviewError } = await supabase
-      .from('reviews')
-      .select(
-        `id, 
-       rating, 
-       comment, 
-       created_at,
-       profiles:user_id(full_name, avatar_url)`
-      )
-      .eq('target_id', hotel.id)
-      .eq('target_type', 'hotel')
-      .eq('is_visible', true)
-      .order('created_at', { ascending: false })
+    const [imagesResult, roomsResult, amenitiesResult, reviewsResult] =
+      await Promise.all([
+        supabase
+          .from('hotel_images')
+          .select('id, image_url, caption, sort_order')
+          .eq('hotel_id', hotel.id)
+          .order('sort_order', { ascending: true }),
+        supabase
+          .from('room_types')
+          .select('*')
+          .eq('hotel_id', hotel.id)
+          .order('price_per_night', { ascending: true }),
+        supabase
+          .from('hotel_amenities')
+          .select('amenities(id, name, icon)')
+          .eq('hotel_id', hotel.id),
+        supabase
+          .from('reviews')
+          .select(
+            `id, 
+             rating, 
+             comment, 
+             created_at,
+             profiles:user_id(full_name, avatar_url)`
+          )
+          .eq('target_id', hotel.id)
+          .eq('target_type', 'hotel')
+          .eq('is_visible', true)
+          .order('created_at', { ascending: false }),
+      ])
 
-    if (reviewError) throw new Error(reviewError.message)
+    if (imagesResult.error && !isMissingSchemaTableError(imagesResult.error)) {
+      throw new Error(imagesResult.error.message)
+    }
+    if (roomsResult.error && !isMissingSchemaTableError(roomsResult.error)) {
+      throw new Error(roomsResult.error.message)
+    }
+    if (
+      amenitiesResult.error &&
+      !isMissingSchemaTableError(amenitiesResult.error)
+    ) {
+      throw new Error(amenitiesResult.error.message)
+    }
+    if (reviewsResult.error) throw new Error(reviewsResult.error.message)
 
     return {
       ...hotel,
-      amenities: (hotel.hotel_amenities || [])
-        .map((item: { amenities: HotelAmenity }) => item.amenities)
-        .flat(),
-      reviews: reviews || [],
+      hotel_images: imagesResult.error ? [] : imagesResult.data || [],
+      room_types: roomsResult.error ? [] : roomsResult.data || [],
+      amenities: (amenitiesResult.error ? [] : amenitiesResult.data || [])
+        .flatMap((item) => item.amenities || [])
+        .filter(Boolean) as Amenity[],
+      reviews: reviewsResult.data || [],
     }
   }
 )

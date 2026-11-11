@@ -56,7 +56,7 @@ export const TourDetailPageClient = ({ tour }: TourDetailPageClientProps) => {
               {(tour.duration_days as number) - 1}Đ
             </Badge>
           </div>
-          <h1 className="mb-2 text-3xl font-bold lg:text-4xl">
+          <h1 className="text-primary mb-2 text-4xl font-semibold lg:text-5xl">
             {tour.name as string}
           </h1>
           <div className="text-muted-foreground flex flex-wrap items-center gap-4 text-sm">
@@ -83,7 +83,7 @@ export const TourDetailPageClient = ({ tour }: TourDetailPageClientProps) => {
 
       {/* Cover Image */}
       {coverImages.length > 0 && (
-        <div className="relative mb-8 h-[300px] overflow-hidden rounded-2xl md:h-[450px]">
+        <div className="relative mb-8 h-[300px] overflow-hidden rounded-md shadow-[10px_10px_0_0_#e3efe9] ring-1 ring-[#e4ddd0] md:h-[450px]">
           <Image
             src={coverImages[0].image_url}
             alt={tour.name as string}
@@ -99,7 +99,7 @@ export const TourDetailPageClient = ({ tour }: TourDetailPageClientProps) => {
         <div className="space-y-8 lg:col-span-2">
           {/* Description */}
           <section>
-            <h2 className="mb-3 text-xl font-bold">Giới thiệu</h2>
+            <h2 className="mb-3 flex items-center gap-3 text-2xl font-semibold before:h-7 before:w-1.5 before:rounded-full before:bg-[#b5432a] before:content-['']">Giới thiệu</h2>
             <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
               {tour.description as string}
             </p>
@@ -108,7 +108,7 @@ export const TourDetailPageClient = ({ tour }: TourDetailPageClientProps) => {
           {/* Itinerary */}
           {itinerary.length > 0 && (
             <section>
-              <h2 className="mb-4 text-xl font-bold">Lịch trình</h2>
+              <h2 className="mb-4 flex items-center gap-3 text-2xl font-semibold before:h-7 before:w-1.5 before:rounded-full before:bg-[#b5432a] before:content-['']">Lịch trình</h2>
               <div className="space-y-4">
                 {itinerary.map((day, idx) => (
                   <motion.div
@@ -135,7 +135,7 @@ export const TourDetailPageClient = ({ tour }: TourDetailPageClientProps) => {
 
           {/* Reviews */}
           <section>
-            <h2 className="mb-4 text-xl font-bold">
+            <h2 className="mb-4 flex items-center gap-3 text-2xl font-semibold before:h-7 before:w-1.5 before:rounded-full before:bg-[#b5432a] before:content-['']">
               Đánh giá ({tour.review_count as number})
             </h2>
             {reviews.length > 0 ? (
@@ -189,8 +189,8 @@ export const TourDetailPageClient = ({ tour }: TourDetailPageClientProps) => {
 
         {/* Sidebar */}
         <div className="lg:col-span-1">
-          <div className="sticky top-24 space-y-4">
-            <div className="border-border rounded-2xl border bg-white p-6">
+          <div className="sticky top-24 lg:top-32 space-y-4">
+            <div className="border-border bg-card rounded-md border border-t-4 border-t-[#b5432a] p-6 shadow-[0_14px_30px_-20px_rgba(18,48,42,0.5)]">
               <p className="text-muted-foreground mb-1 text-sm">Giá tour</p>
               <p className="text-primary mb-1 text-3xl font-bold">
                 {formatPrice(Number(tour.price))}
@@ -231,7 +231,7 @@ export const TourDetailPageClient = ({ tour }: TourDetailPageClientProps) => {
               </Button>
             </div>
 
-            <div className="border-border from-primary/5 to-accent/5 rounded-2xl border bg-gradient-to-br p-6">
+            <div className="border-border rounded-md border bg-[#faf1dc] p-6">
               <h3 className="mb-2 font-semibold">Cần hỗ trợ?</h3>
               <p className="text-muted-foreground mb-3 text-sm">
                 Liên hệ hotline để được tư vấn miễn phí

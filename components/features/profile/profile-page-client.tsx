@@ -21,7 +21,7 @@ export const ProfilePageClient = ({ profile }: ProfilePageClientProps) => {
 
   const { form, handleSubmit, isPending, canSubmit } = useFormWithServerAction({
     schema: profileSchema,
-    action: updateProfile,
+    action: updateProfile as any,
     defaultValues: {
       full_name: '',
       email: '',
@@ -49,7 +49,7 @@ export const ProfilePageClient = ({ profile }: ProfilePageClientProps) => {
 
   return (
     <div className="max-w-2xl">
-      <h1 className="mb-6 text-2xl font-bold">Hồ sơ cá nhân</h1>
+      <h1 className="mb-6 font-display text-primary relative pb-2 text-3xl font-semibold after:absolute after:bottom-0 after:left-0 after:h-[3px] after:w-12 after:rounded-full after:bg-[#c9932b] after:content-['']">Hồ sơ cá nhân</h1>
 
       {/* Avatar */}
       <div className="mb-8 flex items-center gap-4">
@@ -64,7 +64,7 @@ export const ProfilePageClient = ({ profile }: ProfilePageClientProps) => {
           </button>
         </div>
         <div>
-          <h2 className="text-lg font-semibold">
+          <h2 className="text-lg flex items-center gap-2.5 font-semibold before:h-5 before:w-1 before:rounded-full before:bg-[#b5432a] before:content-['']">
             {profile.full_name || 'Chưa cập nhật'}
           </h2>
           <p className="text-muted-foreground text-sm">{profile.email}</p>

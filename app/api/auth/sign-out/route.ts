@@ -21,8 +21,18 @@ export async function POST(request: Request) {
   const url = new URL(request.url)
   const redirectTo = url.searchParams.get('next') || '/'
 
-  // Redirect về trang chủ hoặc trang yêu cầu
-  return NextResponse.redirect(new URL(redirectTo, request.url), {
+  // Xác định domain thực tế người dùng đang truy cập (hỗ trợ ngrok / reverse proxy)
+  const host =
+    request.headers.get('x-forwarded-host') ||
+    request.headers.get('host') ||
+    url.host
+  const protocol =
+    request.headers.get('x-forwarded-proto') ||
+    (host.includes('localhost') ? 'http' : 'https')
+  const baseUrl = `${protocol}://${host}`
+
+  // Redirect về trang chủ hoặc trang yêu cầu theo đúng domain người dùng đang vào
+  return NextResponse.redirect(new URL(redirectTo, baseUrl), {
     status: 302,
   })
 }

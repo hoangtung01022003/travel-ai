@@ -27,9 +27,10 @@ export const FeatureSideBar = () => {
   const pathname = usePathname()
 
   return (
-    <aside className="border-border flex min-h-screen w-64 flex-col border-r bg-white">
+    <aside className="border-border bg-card flex min-h-screen w-64 flex-col border-r">
       <div className="border-border border-b p-6">
-        <h2 className="text-lg font-bold">Tài khoản</h2>
+        <span className="eyebrow mb-1">Cá nhân</span>
+        <h2 className="text-xl font-semibold">Tài khoản</h2>
         <p className="text-muted-foreground text-sm">Quản lý hồ sơ của bạn</p>
       </div>
 
@@ -45,7 +46,7 @@ export const FeatureSideBar = () => {
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
                 isActive
-                  ? 'bg-primary text-white'
+                  ? 'border-secondary bg-secondary-light text-secondary rounded-l-none border-l-2'
                   : 'text-foreground/70 hover:bg-muted hover:text-foreground'
               )}
             >

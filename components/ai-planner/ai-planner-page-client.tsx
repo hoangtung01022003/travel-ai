@@ -53,7 +53,7 @@ function ResultSkeleton() {
   return (
     <div className="space-y-4">
       {/* Overview card skeleton */}
-      <div className="rounded-2xl border border-border bg-gradient-to-br from-primary/5 to-accent/5 p-6 space-y-3">
+      <div className="rounded-md border border-border border-l-4 border-l-[#c9932b] bg-[#faf1dc]/70 p-6 space-y-3">
         <Skeleton className="h-7 w-2/3" />
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-4/5" />
@@ -65,7 +65,7 @@ function ResultSkeleton() {
 
       {/* Day cards skeleton */}
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="rounded-2xl border border-border bg-white p-5 space-y-3">
+        <div key={i} className="rounded-md border border-border bg-card shadow-[0_10px_28px_-20px_rgba(18,48,42,0.45)] p-5 space-y-3">
           <div className="flex items-center gap-4">
             <Skeleton className="h-10 w-10 rounded-full shrink-0" />
             <div className="flex-1 space-y-2">
@@ -119,7 +119,7 @@ function DayCard({ day, index, defaultOpen }: { day: AiItinerary['days'][number]
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.07 }}
-      className="overflow-hidden rounded-2xl border border-border bg-white"
+      className="overflow-hidden rounded-md border border-border bg-card shadow-[0_10px_28px_-20px_rgba(18,48,42,0.45)]"
     >
       <button
         onClick={() => setOpen(o => !o)}
@@ -281,7 +281,7 @@ export default function AiPlannerPageClient({ destinations, isLoggedIn, currentP
         >
           <Sparkles className="h-4 w-4" /> Công nghệ AI tiên tiến
         </motion.div>
-        <h1 className="mb-3 text-3xl font-bold lg:text-5xl">
+        <h1 className="mb-3 text-4xl font-semibold lg:text-6xl">
           Lên kế hoạch với <span className="text-gradient">AI Planner</span>
         </h1>
         <p className="mx-auto max-w-xl text-muted-foreground">
@@ -315,9 +315,9 @@ export default function AiPlannerPageClient({ destinations, isLoggedIn, currentP
         >
           <form
             onSubmit={handleSubmit}
-            className="sticky top-24 space-y-5 rounded-2xl border border-border bg-white p-6 shadow-sm"
+            className="sticky top-24 lg:top-32 space-y-5 rounded-md border border-border bg-card shadow-[0_10px_28px_-20px_rgba(18,48,42,0.45)] p-6 shadow-sm"
           >
-            <h2 className="flex items-center gap-2 text-lg font-bold">
+            <h2 className="font-display text-primary flex items-center gap-2 text-xl font-semibold">
               <Sparkles className="h-5 w-5 text-primary" /> Thông tin chuyến đi
             </h2>
 
@@ -340,7 +340,7 @@ export default function AiPlannerPageClient({ destinations, isLoggedIn, currentP
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
-                    className="absolute top-full z-30 mt-1 w-full overflow-hidden rounded-xl border border-border bg-white shadow-lg"
+                    className="absolute top-full z-30 mt-1 w-full overflow-hidden rounded-md border border-border bg-card shadow-[0_10px_28px_-20px_rgba(18,48,42,0.45)] shadow-lg"
                   >
                     {filteredDestinations.map(d => (
                       <button
@@ -452,7 +452,7 @@ export default function AiPlannerPageClient({ destinations, isLoggedIn, currentP
                 className="space-y-5"
               >
                 {/* Overview */}
-                <div className="rounded-2xl border border-border bg-gradient-to-br from-primary/5 to-accent/5 p-6">
+                <div className="rounded-md border border-border border-l-4 border-l-[#c9932b] bg-[#faf1dc]/70 p-6">
                   <h2 className="mb-1 text-2xl font-bold">{result.title}</h2>
                   <p className="mb-4 text-sm text-muted-foreground">{result.description}</p>
                   <div className="flex flex-wrap gap-2">
@@ -474,7 +474,7 @@ export default function AiPlannerPageClient({ destinations, isLoggedIn, currentP
 
                 {/* Suggested tours */}
                 {suggestedTours.length > 0 && (
-                  <div className="rounded-2xl border border-border bg-white p-5">
+                  <div className="rounded-md border border-border bg-card shadow-[0_10px_28px_-20px_rgba(18,48,42,0.45)] p-5">
                     <h3 className="mb-3 flex items-center gap-2 font-bold">
                       <Route className="h-4 w-4 text-primary" /> Tour gợi ý
                     </h3>
@@ -498,7 +498,7 @@ export default function AiPlannerPageClient({ destinations, isLoggedIn, currentP
                 )}
 
                 {/* ── Save / Cancel actions ────────────────────────────── */}
-                <div className="rounded-2xl border border-border bg-white p-5">
+                <div className="rounded-md border border-border bg-card shadow-[0_10px_28px_-20px_rgba(18,48,42,0.45)] p-5">
                   {saved ? (
                     /* ✅ Saved state */
                     <div className="flex flex-wrap items-center justify-between gap-3">

@@ -1,5 +1,7 @@
 'use client'
 
+import { PageBanner } from '@/components/common/page-banner'
+import { Map as MapIcon } from 'lucide-react'
 import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -86,17 +88,16 @@ export const TourPageClient = ({ tours, totalCount }: TourPageClientProps) => {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold lg:text-4xl">
-          Tour du lịch <span className="text-gradient">hấp dẫn</span>
-        </h1>
-        <p className="text-muted-foreground">
-          Hành trình được thiết kế bởi chuyên gia, trải nghiệm không giới hạn
-        </p>
-      </div>
+      <PageBanner
+        eyebrow="Hành trình trọn gói"
+        title="Tour du lịch"
+        highlight="hấp dẫn"
+        description="Hành trình được thiết kế bởi chuyên gia, trải nghiệm không giới hạn"
+        icon={MapIcon}
+      />
 
       {/* Filter Panel */}
-      <div className="border-border mb-8 rounded-2xl border bg-white shadow-sm overflow-hidden">
+      <div className="border-border bg-card mb-8 overflow-hidden rounded-md border border-t-4 border-t-[#c9932b] shadow-[0_10px_30px_-18px_rgba(18,48,42,0.4)]">
         <div className="flex gap-3 p-4">
           <SearchInput
             className="flex-1"
@@ -205,7 +206,7 @@ export const TourPageClient = ({ tours, totalCount }: TourPageClientProps) => {
 
       <p className="mb-4 text-sm text-muted-foreground">{totalCount} tour được tìm thấy</p>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {tours.length === 0 ? (
           <div className="col-span-full py-16 text-center">
             <MapPin className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
@@ -225,11 +226,11 @@ export const TourPageClient = ({ tours, totalCount }: TourPageClientProps) => {
             transition={{ delay: index * 0.04 }}
           >
             <Link href={`/tours/${tour.slug}`}>
-              <div className="group border-border card-hover overflow-hidden rounded-2xl border bg-white">
-                <div className="relative h-56 overflow-hidden">
+              <div className="group border-border card-hover bg-card h-full overflow-hidden rounded-md border p-2.5">
+                <div className="relative h-56 overflow-hidden rounded-sm">
                   {tour.cover_image ? (
                     <Image src={tour.cover_image as string} alt={tour.name as string} fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-110" />
+                      className="object-cover transition-transform duration-500 group-hover:scale-105" />
                   ) : (
                     <div className="bg-muted flex h-full w-full items-center justify-center">
                       <MapPin className="text-muted-foreground h-8 w-8" />
@@ -244,7 +245,7 @@ export const TourPageClient = ({ tours, totalCount }: TourPageClientProps) => {
                   </div>
                 </div>
                 <div className="p-5">
-                  <h3 className="group-hover:text-primary mb-1 text-lg font-semibold transition-colors">{tour.name as string}</h3>
+                  <h3 className="group-hover:text-secondary mb-1 text-xl font-semibold transition-colors">{tour.name as string}</h3>
                   <p className="text-muted-foreground mb-3 line-clamp-2 text-sm">{tour.description as string}</p>
                   <div className="mb-4 flex flex-wrap gap-2">
                     <Badge variant="muted" className="gap-1">

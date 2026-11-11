@@ -84,28 +84,21 @@ export default function HotelCreateClient({ destinations, allAmenities, allTags 
       const result = await adminCreateHotel(fd)
       if (!result.success) { toast.error(result.error ?? 'Không thể thêm khách sạn'); return }
 
-      // 2. Get hotel ID
-      try {
-        const slug = form.slug || form.name.toLowerCase().normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd')
-          .replace(/[^a-z0-9\s-]/g, '').trim().replace(/\s+/g, '-')
-        const res = await fetch(`/api/admin/hotels/get-id?slug=${encodeURIComponent(slug)}`)
-        const { id } = await res.json()
-
-        if (id) {
-          // 3. Save rooms, images, amenities, tags in parallel
-          await Promise.all([
-            rooms.some(r => r.name.trim() && r.price_per_night > 0) &&
-              fetch('/api/admin/hotels/rooms', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hotelId: id, rooms }) }),
-            images.some(img => img.image_url.trim()) &&
-              fetch('/api/admin/hotels/images', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hotelId: id, images }) }),
-            selectedAmenities.length > 0 &&
-              fetch('/api/admin/hotels/amenities', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hotelId: id, amenityIds: selectedAmenities }) }),
-            selectedTags.length > 0 &&
-              fetch('/api/admin/hotels/tags', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hotelId: id, tagIds: selectedTags }) }),
-          ])
-        }
-      } catch { /* non-critical, data can be added in Edit */ }
+      // 2. Lưu phòng, ảnh, tiện ích, tag — báo lỗi rõ ràng nếu có
+      const id = result.data?.id
+      if (id) {
+        const post = (url: string, body: unknown) =>
+          fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+            .then(async r => { if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error ?? url) })
+        const jobs: Promise<void>[] = []
+        if (rooms.some(r => r.name.trim() && r.price_per_night > 0)) jobs.push(post('/api/admin/hotels/rooms', { hotelId: id, rooms }))
+        if (images.some(img => img.image_url.trim())) jobs.push(post('/api/admin/hotels/images', { hotelId: id, images }))
+        if (selectedAmenities.length > 0) jobs.push(post('/api/admin/hotels/amenities', { hotelId: id, amenityIds: selectedAmenities }))
+        if (selectedTags.length > 0) jobs.push(post('/api/admin/hotels/tags', { hotelId: id, tagIds: selectedTags }))
+        const results = await Promise.allSettled(jobs)
+        const failed = results.filter(r => r.status === 'rejected') as PromiseRejectedResult[]
+        if (failed.length) toast.error('Đã tạo khách sạn nhưng lưu chi tiết lỗi: ' + failed.map(f => f.reason?.message).join('; '))
+      }
 
       toast.success('Thêm khách sạn thành công!')
       router.push('/admin/hotels')

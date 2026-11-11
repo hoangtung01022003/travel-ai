@@ -97,7 +97,7 @@ export function BookingStatusAction({
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-8 z-20 min-w-[160px] rounded-xl border border-border bg-white shadow-lg py-1">
+          <div className="absolute right-0 top-8 z-20 min-w-[160px] rounded-md border border-border bg-card shadow-[0_10px_28px_-20px_rgba(18,48,42,0.45)] shadow-lg py-1">
             {allowedActions.map((action) => {
               const actionCfg = ACTION_LABELS[action]
               const Icon = actionCfg.icon

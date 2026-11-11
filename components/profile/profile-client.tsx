@@ -96,7 +96,7 @@ export default function ProfileClient({ profile, userEmail }: ProfileClientProps
         className="space-y-6"
       >
         {/* Avatar card */}
-        <div className="rounded-2xl border border-border bg-gradient-to-br from-primary/5 to-accent/5 p-6">
+        <div className="rounded-md border border-border border-l-4 border-l-[#c9932b] bg-[#faf1dc]/70 p-6">
           <div className="flex items-center gap-5">
             <Avatar className="h-20 w-20 text-2xl border-2 border-primary/20">
               <AvatarFallback className="bg-primary/10 text-primary text-2xl font-bold">
@@ -121,9 +121,9 @@ export default function ProfileClient({ profile, userEmail }: ProfileClientProps
         </div>
 
         {/* Info card */}
-        <div className="rounded-2xl border border-border bg-white p-6 shadow-sm">
+        <div className="rounded-md border border-border bg-card shadow-[0_10px_28px_-20px_rgba(18,48,42,0.45)] p-6 shadow-sm">
           <div className="mb-5 flex items-center justify-between">
-            <h2 className="font-semibold text-lg">Thông tin cá nhân</h2>
+            <h2 className="text-lg flex items-center gap-2.5 font-semibold before:h-5 before:w-1 before:rounded-full before:bg-[#b5432a] before:content-['']">Thông tin cá nhân</h2>
             {!editing ? (
               <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setEditing(true)}>
                 <Edit3 className="h-3.5 w-3.5" /> Chỉnh sửa
@@ -226,8 +226,8 @@ export default function ProfileClient({ profile, userEmail }: ProfileClientProps
         </div>
 
         {/* Quick links */}
-        <div className="rounded-2xl border border-border bg-white p-6 shadow-sm">
-          <h2 className="mb-4 font-semibold text-lg">Tác vụ nhanh</h2>
+        <div className="rounded-md border border-border bg-card shadow-[0_10px_28px_-20px_rgba(18,48,42,0.45)] p-6 shadow-sm">
+          <h2 className="mb-4 text-lg flex items-center gap-2.5 font-semibold before:h-5 before:w-1 before:rounded-full before:bg-[#b5432a] before:content-['']">Tác vụ nhanh</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {[
               { href: '/my-tours', label: '📋 Xem đặt chỗ của tôi', desc: 'Tour và khách sạn đã đặt' },

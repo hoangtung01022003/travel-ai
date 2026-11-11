@@ -2,6 +2,7 @@ import { getCurrentUserWithRole, getFullProfile } from '@/components/layout/acti
 import ClientLayout from '@/components/layout/client/client-layout'
 import Footer from '@/components/layout/client/footer'
 import Header from '@/components/layout/client/header'
+import AnimatedBackground from '@/components/layout/client/animated-background'
 
 export default async function MainLayout({
   children,
@@ -21,8 +22,9 @@ export default async function MainLayout({
       initialRole={initialRole}
       initialUserId={initialUserId}
     >
+      <AnimatedBackground />
       <Header serverProfile={serverProfile} />
-      <div className="mt-20">{children}</div>
+      <div className="pt-16 sm:pt-[92px] lg:pt-[108px]">{children}</div>
       <Footer />
     </ClientLayout>
   )

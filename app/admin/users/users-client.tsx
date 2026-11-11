@@ -47,17 +47,17 @@ export default function UsersClient({ users, currentUserId }: UsersClientProps) 
     <>
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Quản lý Users</h1>
+          <h1 className="font-display text-primary relative pb-2 text-3xl font-semibold after:absolute after:bottom-0 after:left-0 after:h-[3px] after:w-12 after:rounded-full after:bg-[#c9932b] after:content-['']">Quản lý Users</h1>
           <p className="text-sm text-muted-foreground">Tổng {users.length} người dùng</p>
         </div>
 
         {/* Stats row */}
         <div className="flex items-center gap-3">
-          <div className="rounded-xl border border-border bg-white px-4 py-2 text-center">
+          <div className="rounded-md border border-border bg-card shadow-[0_10px_28px_-20px_rgba(18,48,42,0.45)] px-4 py-2 text-center">
             <p className="text-xl font-bold text-primary">{adminCount}</p>
             <p className="text-xs text-muted-foreground">Admins</p>
           </div>
-          <div className="rounded-xl border border-border bg-white px-4 py-2 text-center">
+          <div className="rounded-md border border-border bg-card shadow-[0_10px_28px_-20px_rgba(18,48,42,0.45)] px-4 py-2 text-center">
             <p className="text-xl font-bold text-destructive">{bannedCount}</p>
             <p className="text-xs text-muted-foreground">Đã ban</p>
           </div>
@@ -65,7 +65,7 @@ export default function UsersClient({ users, currentUserId }: UsersClientProps) 
       </div>
 
       {/* Filters */}
-      <div className="rounded-xl border border-border bg-white p-4">
+      <div className="rounded-md border border-border bg-card shadow-[0_10px_28px_-20px_rgba(18,48,42,0.45)] p-4">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-48">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -108,7 +108,7 @@ export default function UsersClient({ users, currentUserId }: UsersClientProps) 
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border border-border bg-white overflow-hidden">
+      <div className="rounded-md border border-border bg-card shadow-[0_10px_28px_-20px_rgba(18,48,42,0.45)] overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <p className="text-sm font-medium">Danh sách người dùng</p>
         </div>

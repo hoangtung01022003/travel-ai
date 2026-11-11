@@ -5,7 +5,6 @@ import { UploadCloud, X, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Image from 'next/image'
 import { toast } from 'sonner'
-import { v4 as uuidv4 } from 'uuid'
 
 export interface UploadedImage {
   id: string
@@ -65,7 +64,7 @@ export function MultiImageUpload({
         }
 
         newImages.push({
-          id: uuidv4(),
+          id: crypto.randomUUID(),
           url: data.url,
           caption: '', // Caption có thể sửa sau nếu muốn
         })

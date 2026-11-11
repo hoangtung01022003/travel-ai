@@ -12,7 +12,7 @@ export default async function AdminTourCreatePage() {
   return (
     <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold">Thêm Tour mới</h1>
+        <h1 className="font-display text-primary relative pb-2 text-3xl font-semibold after:absolute after:bottom-0 after:left-0 after:h-[3px] after:w-12 after:rounded-full after:bg-[#c9932b] after:content-['']">Thêm Tour mới</h1>
         <p className="text-sm text-muted-foreground">Tạo thông tin chung. Bạn có thể thêm lịch trình sau khi lưu.</p>
       </div>
 

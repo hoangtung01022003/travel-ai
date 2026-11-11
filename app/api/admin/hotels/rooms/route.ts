@@ -7,13 +7,16 @@ export async function POST(req: Request) {
     const supabaseUser = await createClient()
     const { data: { user } } = await supabaseUser.auth.getUser()
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const { data: profile } = await supabaseUser.from('profiles').select('role').eq('id', user.id).maybeSingle()
+    if ((profile?.role ?? user.user_metadata?.role) !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
     const { hotelId, rooms } = await req.json()
     if (!hotelId || !Array.isArray(rooms)) return NextResponse.json({ error: 'Invalid data' }, { status: 400 })
 
     const supabase = createAdminClient()
     // Delete and re-create all rooms (upsert approach)
-    await supabase.from('room_types').delete().eq('hotel_id', hotelId)
+    const { error: delError } = await supabase.from('room_types').delete().eq('hotel_id', hotelId)
+    if (delError) return NextResponse.json({ error: delError.message }, { status: 500 })
 
     const validRooms = rooms.filter((r: any) => r.name?.trim() && r.price_per_night > 0)
     if (validRooms.length > 0) {
