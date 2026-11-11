@@ -262,34 +262,6 @@ export const HotelDetailPageClient = ({
             </section>
           )}
 
-          {/* Map */}
-          <section>
-            <h2 className="mb-4 flex items-center gap-3 text-2xl font-semibold before:h-7 before:w-1.5 before:rounded-full before:bg-[#b5432a] before:content-['']">
-              Vị trí
-            </h2>
-            <p className="text-muted-foreground mb-3 flex items-center gap-1 text-sm">
-              <MapPin className="h-4 w-4" />
-              {[hotel.address, hotel.province].filter(Boolean).join(', ') || (hotel.name as string)}
-            </p>
-            <div className="border-border overflow-hidden rounded-lg border">
-              <iframe
-                title={`Bản đồ ${hotel.name}`}
-                src={`https://www.google.com/maps?q=${mapQuery}&output=embed`}
-                className="h-72 w-full"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
-            </div>
-            <a
-              href={`https://www.google.com/maps/dir/?api=1&destination=${mapQuery}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary mt-2 inline-block text-sm font-medium hover:underline"
-            >
-              Chỉ đường trên Google Maps →
-            </a>
-          </section>
-
           {/* Reviews */}
           <section>
             <h2 className="mb-4 flex items-center gap-3 text-2xl font-semibold before:h-7 before:w-1.5 before:rounded-full before:bg-[#b5432a] before:content-['']">
@@ -370,12 +342,27 @@ export const HotelDetailPageClient = ({
 
             <div className="border-border rounded-md border bg-[#e3efe9]/60 p-6">
               <h3 className="mb-3 font-semibold">Vị trí</h3>
-              <div className="bg-muted text-muted-foreground flex h-40 items-center justify-center rounded-xl text-sm">
-                <MapPin className="mr-2 h-5 w-5" /> Bản đồ sẽ hiển thị ở đây
+              <div className="border-border overflow-hidden rounded-xl border">
+                <iframe
+                  title={`Bản đồ ${hotel.name}`}
+                  src={`https://www.google.com/maps?q=${mapQuery}&output=embed`}
+                  className="h-56 w-full"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
               </div>
-              <p className="text-muted-foreground mt-2 text-sm">
-                {(hotel.address as string) || (hotel.province as string)}
+              <p className="text-muted-foreground mt-2 flex items-start gap-1 text-sm">
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+                {[hotel.address, hotel.province].filter(Boolean).join(', ') || (hotel.name as string)}
               </p>
+              <a
+                href={`https://www.google.com/maps/dir/?api=1&destination=${mapQuery}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary mt-1 inline-block text-sm font-medium hover:underline"
+              >
+                Chỉ đường trên Google Maps →
+              </a>
             </div>
           </div>
         </div>
