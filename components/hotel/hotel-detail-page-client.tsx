@@ -20,6 +20,7 @@ import Link from 'next/link'
 import { formatPrice, timeAgo } from '@/lib/utils/common'
 import { HotelDetail } from '@/types/hotel'
 import BookingModal from '@/components/booking/booking-modal'
+import { useWishlist } from '@/components/wishlist/use-wishlist'
 
 interface HotelDetailPageClientProps {
   hotel: HotelDetail
@@ -31,6 +32,14 @@ export const HotelDetailPageClient = ({
   const [imgIndex, setImgIndex] = useState(0)
   const [bookingOpen, setBookingOpen] = useState(false)
   const [selectedPrice, setSelectedPrice] = useState(0)
+  const wishlist = useWishlist('hotel', hotel.id as string)
+
+  // Ưu tiên toạ độ; nếu chưa có thì tìm theo tên + địa chỉ + tỉnh
+  const mapQuery = encodeURIComponent(
+    hotel.latitude != null && hotel.longitude != null
+      ? `${hotel.latitude},${hotel.longitude}`
+      : [hotel.name, hotel.address, hotel.province].filter(Boolean).join(', ')
+  )
 
   const images = hotel.hotel_images || []
   const allImages = hotel.cover_image
@@ -93,8 +102,18 @@ export const HotelDetailPageClient = ({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-1">
-            <Heart className="h-4 w-4" /> Yêu thích
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1"
+            onClick={wishlist.toggle}
+            disabled={wishlist.pending}
+            aria-pressed={wishlist.saved}
+          >
+            <Heart
+              className={`h-4 w-4 ${wishlist.saved ? 'fill-[#b5432a] text-[#b5432a]' : ''}`}
+            />
+            {wishlist.saved ? 'Đã lưu' : 'Yêu thích'}
           </Button>
           <Button variant="outline" size="sm" className="gap-1">
             <Share2 className="h-4 w-4" /> Chia sẻ
@@ -242,6 +261,34 @@ export const HotelDetailPageClient = ({
               </div>
             </section>
           )}
+
+          {/* Map */}
+          <section>
+            <h2 className="mb-4 flex items-center gap-3 text-2xl font-semibold before:h-7 before:w-1.5 before:rounded-full before:bg-[#b5432a] before:content-['']">
+              Vị trí
+            </h2>
+            <p className="text-muted-foreground mb-3 flex items-center gap-1 text-sm">
+              <MapPin className="h-4 w-4" />
+              {[hotel.address, hotel.province].filter(Boolean).join(', ') || (hotel.name as string)}
+            </p>
+            <div className="border-border overflow-hidden rounded-lg border">
+              <iframe
+                title={`Bản đồ ${hotel.name}`}
+                src={`https://www.google.com/maps?q=${mapQuery}&output=embed`}
+                className="h-72 w-full"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+            <a
+              href={`https://www.google.com/maps/dir/?api=1&destination=${mapQuery}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary mt-2 inline-block text-sm font-medium hover:underline"
+            >
+              Chỉ đường trên Google Maps →
+            </a>
+          </section>
 
           {/* Reviews */}
           <section>

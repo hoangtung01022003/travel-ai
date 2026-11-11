@@ -1,9 +1,8 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import { toast } from 'sonner'
-import { getWishlistStatus, toggleWishlist } from '@/components/wishlist/actions/wishlist-actions'
+import { useWishlist } from '@/components/wishlist/use-wishlist'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
@@ -37,41 +36,9 @@ export const DestinationDetailPageClient = ({
 }: DestinationDetailPageClientProps) => {
   const [currentImage, setCurrentImage] = useState(0)
   const [quickView, setQuickView] = useState<QuickViewAttraction | null>(null)
-  const [saved, setSaved] = useState(false)
-  const [savingWishlist, startSaving] = useTransition()
-  const router = useRouter()
 
   const destinationId = destination.id as string
-
-  useEffect(() => {
-    let active = true
-    getWishlistStatus('destination', destinationId).then((v) => {
-      if (active) setSaved(v)
-    })
-    return () => {
-      active = false
-    }
-  }, [destinationId])
-
-  const handleToggleWishlist = () => {
-    const prev = saved
-    setSaved(!prev) // cập nhật lạc quan
-    startSaving(async () => {
-      const res = await toggleWishlist('destination', destinationId)
-      if (!res.ok) {
-        setSaved(prev)
-        if (res.reason === 'unauthenticated') {
-          toast.info('Vui lòng đăng nhập để lưu yêu thích')
-          router.push('/login')
-        } else {
-          toast.error('Không thể lưu yêu thích, vui lòng thử lại')
-        }
-        return
-      }
-      setSaved(res.saved)
-      toast.success(res.saved ? 'Đã lưu vào yêu thích' : 'Đã bỏ khỏi yêu thích')
-    })
-  }
+  const { saved, pending: savingWishlist, toggle: handleToggleWishlist } = useWishlist('destination', destinationId)
 
   const handleShare = async () => {
     const url = window.location.href

@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   Heart,
   Shield,
+  Sparkles,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -215,8 +216,12 @@ export default function Header({ serverProfile = null }: { serverProfile?: Profi
                     Tour đã đặt
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => router.push('/itineraries')}>
-                    <Heart className="mr-2 h-4 w-4" />
+                    <Sparkles className="mr-2 h-4 w-4" />
                     Lịch trình AI
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/wishlist')}>
+                    <Heart className="mr-2 h-4 w-4" />
+                    Yêu thích
                   </DropdownMenuItem>
 
                   {user.role === 'admin' && (

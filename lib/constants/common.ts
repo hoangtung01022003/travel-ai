@@ -74,4 +74,5 @@ export const DASHBOARD_NAV_ITEMS = [
   { href: '/profile', label: 'Tổng quan', icon: 'User' },
   { href: '/itineraries', label: 'Lịch trình AI', icon: 'Sparkles' },
   { href: '/my-tours', label: 'Các tours đã đặt', icon: 'Map' },
+  { href: '/wishlist', label: 'Yêu thích', icon: 'Heart' },
 ] as const
