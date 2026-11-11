@@ -7,21 +7,53 @@ import {
   generateItineraryInputSchema,
 } from '@/lib/schemas/ai-itinerary.schema'
 
-// ── Model fallback list ──────────────────────────────────────────────────────
-// Ưu tiên dòng Flash Lite vì có hạn mức Free lớn nhất: 15 RPM và 500 RPD (gấp 25 lần dòng Flash thường vốn chỉ có 20 RPD)
-const GEMINI_MODELS = [
-  'gemini-3.5-flash-lite', // 15 RPM, 500 RPD (tối ưu nhất, không lo bị nghẽn)
-  'gemini-3.1-flash-lite', // 15 RPM, 500 RPD (dự phòng)
+// Cho phép đủ thời gian xoay qua nhiều model (Vercel mặc định chỉ 10–15s)
+export const maxDuration = 60
+
+// ── Model rotation ───────────────────────────────────────────────────────────
+// Hạn mức free tier (theo AI Studio): Flash Lite 4K RPM / 150K RPD, Flash 1K RPM / 10K RPD.
+// Nhóm "primary" được xoay vòng (round-robin) để chia tải RPM giữa các model;
+// nhóm "backup" chỉ dùng khi toàn bộ primary lỗi. gemini-3.8-flash để cuối vì phản hồi rất chậm.
+const PRIMARY_MODELS = [
+  'gemini-3.5-flash-lite',
+  'gemini-3.1-flash-lite',
   'gemini-flash-lite-latest',
-  'gemini-3.8-flash',      // 5 RPM, 20 RPD
-  'gemini-3.5-flash',      // 5 RPM, 20 RPD
+]
+const BACKUP_MODELS = [
+  'gemini-3.5-flash',
+  'gemini-3.6-flash',
+  'gemini-3-flash-preview',
+  'gemini-3.8-flash',
 ]
 
-// Retry và tự động chuyển model khi gặp lỗi quá tải (503), hết hạn mức (429) hoặc model không hỗ trợ (404)
-async function callGeminiWithRetry(prompt: string): Promise<string> {
+// Model bị 429 / 404 sẽ bị tạm "nghỉ" để request sau không gọi lại vô ích.
+// (Lưu trong bộ nhớ của instance server — đủ dùng, không cần DB.)
+const RATE_LIMIT_COOLDOWN_MS = 60_000
+const NOT_FOUND_COOLDOWN_MS = 60 * 60_000
+const modelCooldownUntil = new Map<string, number>()
+let rrIndex = 0
+
+function modelOrder(): string[] {
+  const now = Date.now()
+  const start = rrIndex++ % PRIMARY_MODELS.length
+  const rotated = [...PRIMARY_MODELS.slice(start), ...PRIMARY_MODELS.slice(0, start)]
+  const all = [...rotated, ...BACKUP_MODELS]
+  const healthy = all.filter((m) => (modelCooldownUntil.get(m) ?? 0) <= now)
+  // Nếu tất cả đều đang nghỉ thì vẫn thử hết (có thể quota đã hồi)
+  return healthy.length ? healthy : all
+}
+
+/**
+ * Gọi Gemini, tự xoay model. `parse` chạy trên text trả về — nếu ném lỗi
+ * (JSON hỏng / bị cắt cụt) thì cũng chuyển sang model tiếp theo.
+ */
+async function generateWithRotation<T>(
+  prompt: string,
+  parse: (text: string) => T
+): Promise<{ data: T; model: string }> {
   let lastError: unknown
 
-  for (const model of GEMINI_MODELS) {
+  for (const model of modelOrder()) {
     for (let attempt = 1; attempt <= 2; attempt++) {
       try {
         const result = await ai.models.generateContent({
@@ -30,49 +62,45 @@ async function callGeminiWithRetry(prompt: string): Promise<string> {
           config: {
             responseMimeType: 'application/json',
             temperature: 0.7,
-            maxOutputTokens: 8000,
+            maxOutputTokens: 16384,
           },
         })
         const text = result.text ?? ''
-        if (text) return text
+        if (!text) throw new Error('EMPTY_RESPONSE')
+        try {
+          return { data: parse(text), model }
+        } catch (parseErr) {
+          console.warn(`[Gemini API] ${model} trả JSON không hợp lệ, thử model khác:`, String(parseErr).slice(0, 200))
+          lastError = parseErr
+          break
+        }
       } catch (err: unknown) {
         lastError = err
         const msg = err instanceof Error ? err.message : String(err)
-        console.warn(`[Gemini API] Model ${model} (attempt ${attempt}) thất bại:`, msg)
+        console.warn(`[Gemini API] ${model} (lần ${attempt}) thất bại:`, msg.slice(0, 200))
 
-        // Phát hiện lỗi hết số dư tài khoản trả trước (Prepayment credits depleted)
         if (msg.includes('prepayment credits are depleted') || msg.includes('402')) {
           throw new Error(
-            'API Key Gemini đã hết hạn mức tín dụng trả trước (Prepayment credits depleted). Vui lòng nạp thêm credit trên Google AI Studio hoặc tạo một API Key mới (Free tier) tại aistudio.google.com.'
+            'API Key Gemini đã hết hạn mức tín dụng trả trước. Vui lòng nạp thêm credit hoặc tạo API Key mới (Free tier) tại aistudio.google.com.'
           )
         }
 
-        const isOverload =
-          msg.includes('503') ||
-          msg.includes('UNAVAILABLE') ||
-          msg.includes('overloaded')
-        const isRateLimit =
-          msg.includes('429') ||
-          msg.includes('RESOURCE_EXHAUSTED') ||
-          msg.includes('quota')
-        const isModelNotFound =
-          msg.includes('404') ||
-          msg.includes('NOT_FOUND') ||
-          msg.includes('not supported') ||
-          msg.includes('not available')
+        const isOverload = /503|UNAVAILABLE|overloaded/i.test(msg)
+        const isRateLimit = /429|RESOURCE_EXHAUSTED|quota/i.test(msg)
+        const isModelNotFound = /404|NOT_FOUND|not supported|not available|no longer available/i.test(msg)
 
-        // Nếu model bị 404 (không khả dụng) hoặc 429 (hết quota), chuyển ngay sang model dự phòng
-        if (isModelNotFound || isRateLimit) {
+        if (isRateLimit) {
+          modelCooldownUntil.set(model, Date.now() + RATE_LIMIT_COOLDOWN_MS)
           break
         }
-
-        // Nếu bị quá tải tạm thời (503) ở lần thử 1, đợi 1.5s rồi thử lại
+        if (isModelNotFound) {
+          modelCooldownUntil.set(model, Date.now() + NOT_FOUND_COOLDOWN_MS)
+          break
+        }
         if (isOverload && attempt === 1) {
           await new Promise((r) => setTimeout(r, 1500))
           continue
         }
-
-        // Các trường hợp khác: chuyển sang model tiếp theo
         break
       }
     }
@@ -82,6 +110,21 @@ async function callGeminiWithRetry(prompt: string): Promise<string> {
     lastError ??
     new Error('Tất cả model AI hiện không khả dụng hoặc đã hết hạn mức. Vui lòng thử lại sau vài phút.')
   )
+}
+
+/** Tách JSON, parse và validate; ném lỗi nếu JSON hỏng hoặc thiếu cấu trúc chính. */
+function parseItinerary(rawText: string) {
+  const rawParsed = JSON.parse(extractJSON(rawText))
+  const validated = aiItinerarySchema.safeParse(rawParsed)
+  if (validated.success) return validated.data
+  console.warn(
+    '[AI Itinerary] Zod validation warnings:',
+    validated.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`)
+  )
+  if (!rawParsed || !Array.isArray(rawParsed.days) || rawParsed.days.length === 0) {
+    throw new Error('Itinerary thiếu danh sách ngày')
+  }
+  return rawParsed
 }
 
 
@@ -225,53 +268,25 @@ Mỗi ngày 5-8 hoạt động. CHỈ trả về JSON, không thêm text.`
 
     // ─── 5. Call Gemini (with model fallback for 503) ───────────────────────
 
-    let rawText: string
-    try {
-      rawText = await callGeminiWithRetry(fullPrompt)
-    } catch (geminiErr: unknown) {
-      const msg = geminiErr instanceof Error ? geminiErr.message : String(geminiErr)
-      const isOverload = msg.includes('503') || msg.includes('UNAVAILABLE') || msg.includes('overloaded')
-      return NextResponse.json(
-        {
-          error: isOverload
-            ? 'Dịch vụ AI đang quá tải, vui lòng thử lại sau 1-2 phút.'
-            : `Lỗi AI: ${msg}`,
-        },
-        { status: isOverload ? 503 : 500 }
-      )
-    }
-
-    if (!rawText) {
-      return NextResponse.json(
-        { error: 'AI không trả về kết quả. Vui lòng thử lại.' },
-        { status: 500 }
-      )
-    }
-
-    // ─── 6. Parse & validate response ────────────────────────────────────────
-    // Gemini 2.5 (thinking model) may wrap JSON in markdown fences or extra text
+    // ─── 6. Parse & validate (JSON hỏng → tự thử model khác) ─────────────────
 
     let itinerary
+    let usedModel: string
     try {
-      const jsonStr = extractJSON(rawText)
-      const rawParsed = JSON.parse(jsonStr)
-      const validated = aiItinerarySchema.safeParse(rawParsed)
-
-      if (validated.success) {
-        itinerary = validated.data
-      } else {
-        console.warn(
-          '[AI Itinerary] Zod validation warnings:',
-          validated.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`)
-        )
-        itinerary = rawParsed
-      }
-    } catch (parseErr) {
-      console.error('[AI Itinerary] JSON parse failed:', parseErr)
-      console.error('[AI Itinerary] Raw text (first 500 chars):', rawText.slice(0, 500))
+      const res = await generateWithRotation(fullPrompt, parseItinerary)
+      itinerary = res.data
+      usedModel = res.model
+    } catch (geminiErr: unknown) {
+      const msg = geminiErr instanceof Error ? geminiErr.message : String(geminiErr)
+      console.error('[AI Itinerary] Tất cả model thất bại:', msg)
+      const isBusy = /503|UNAVAILABLE|overloaded|429|RESOURCE_EXHAUSTED|quota/i.test(msg)
       return NextResponse.json(
-        { error: `AI response không hợp lệ: ${rawText.slice(0, 100)}...` },
-        { status: 500 }
+        {
+          error: isBusy
+            ? 'Dịch vụ AI đang bận, vui lòng thử lại sau 1-2 phút.'
+            : 'AI chưa tạo được lịch trình hợp lệ, vui lòng thử lại.',
+        },
+        { status: isBusy ? 503 : 500 }
       )
     }
 
@@ -299,7 +314,7 @@ Mỗi ngày 5-8 hoạt động. CHỈ trả về JSON, không thêm text.`
         await supabase.from('ai_prompt_logs').insert({
           user_id: userId,
           prompt: userPrompt,
-          model: 'gemini-auto-fallback',
+          model: usedModel,
           tokens_used: null,
         })
       } catch (logErr) {
